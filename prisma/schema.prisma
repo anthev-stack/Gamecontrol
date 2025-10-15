@@ -14,6 +14,12 @@ model User {
   password  String
   name      String?
   role      Role     @default(USER)
+  
+  // FTP Access
+  ftpUsername String?  @unique
+  ftpPassword String?  // Encrypted
+  ftpEnabled  Boolean  @default(true)
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   servers   Server[]
@@ -58,6 +64,9 @@ model Server {
   // VM details
   vmId        String?      // VM identifier
   containerId String?      // Docker container ID
+  
+  // FTP details
+  ftpPath     String?      // Path in user's FTP directory
   
   // Metadata
   createdAt   DateTime     @default(now())

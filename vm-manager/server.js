@@ -2,6 +2,17 @@ import express from 'express'
 import Docker from 'dockerode'
 import dotenv from 'dotenv'
 import bodyParser from 'body-parser'
+import {
+  createFTPUser,
+  deleteFTPUser,
+  changeFTPPassword,
+  linkServerToFTP,
+  unlinkServerFromFTP,
+  getFTPUserInfo,
+  testFTPConnection,
+  generateFTPPassword,
+  generateFTPUsername
+} from './ftp-manager.js'
 
 dotenv.config()
 
@@ -407,6 +418,135 @@ app.get('/api/containers', authenticate, async (req, res) => {
     })
   } catch (error) {
     console.error('❌ Error listing containers:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// ═══════════════════════════════════════════════════
+// FTP Management Endpoints
+// ═══════════════════════════════════════════════════
+
+// Create FTP user
+app.post('/api/ftp/users', authenticate, async (req, res) => {
+  try {
+    const { userId } = req.body
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' })
+    }
+    
+    console.log(`🔐 Creating FTP user for: ${userId}`)
+    
+    const password = generateFTPPassword()
+    const ftpUser = await createFTPUser(userId, password)
+    
+    res.json({
+      ...ftpUser,
+      message: 'FTP user created successfully'
+    })
+  } catch (error) {
+    console.error('❌ Error creating FTP user:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Get FTP user info
+app.get('/api/ftp/users/:userId', authenticate, async (req, res) => {
+  try {
+    const username = generateFTPUsername(req.params.userId)
+    const info = await getFTPUserInfo(username)
+    
+    if (!info) {
+      return res.status(404).json({ error: 'FTP user not found' })
+    }
+    
+    res.json(info)
+  } catch (error) {
+    console.error('❌ Error getting FTP user info:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Change FTP password
+app.put('/api/ftp/users/:userId/password', authenticate, async (req, res) => {
+  try {
+    const username = generateFTPUsername(req.params.userId)
+    const { newPassword } = req.body
+    
+    const password = newPassword || generateFTPPassword()
+    await changeFTPPassword(username, password)
+    
+    res.json({
+      message: 'Password changed successfully',
+      newPassword: password
+    })
+  } catch (error) {
+    console.error('❌ Error changing password:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Delete FTP user
+app.delete('/api/ftp/users/:userId', authenticate, async (req, res) => {
+  try {
+    const username = generateFTPUsername(req.params.userId)
+    await deleteFTPUser(username)
+    
+    res.json({ message: 'FTP user deleted successfully' })
+  } catch (error) {
+    console.error('❌ Error deleting FTP user:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Link server to FTP
+app.post('/api/ftp/link', authenticate, async (req, res) => {
+  try {
+    const { containerId, userId, serverName } = req.body
+    
+    if (!containerId || !userId || !serverName) {
+      return res.status(400).json({ error: 'containerId, userId, and serverName are required' })
+    }
+    
+    const username = generateFTPUsername(userId)
+    const result = await linkServerToFTP(containerId, username, serverName)
+    
+    res.json({
+      message: 'Server linked to FTP successfully',
+      ...result
+    })
+  } catch (error) {
+    console.error('❌ Error linking server:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Unlink server from FTP
+app.post('/api/ftp/unlink', authenticate, async (req, res) => {
+  try {
+    const { userId, serverName } = req.body
+    
+    if (!userId || !serverName) {
+      return res.status(400).json({ error: 'userId and serverName are required' })
+    }
+    
+    const username = generateFTPUsername(userId)
+    await unlinkServerFromFTP(username, serverName)
+    
+    res.json({ message: 'Server unlinked from FTP successfully' })
+  } catch (error) {
+    console.error('❌ Error unlinking server:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Test FTP connection
+app.get('/api/ftp/status', authenticate, async (req, res) => {
+  try {
+    const status = await testFTPConnection()
+    res.json(status)
+  } catch (error) {
+    console.error('❌ Error testing FTP:', error)
     res.status(500).json({ error: error.message })
   }
 })
