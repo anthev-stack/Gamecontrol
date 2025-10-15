@@ -50,6 +50,7 @@ sudo npm install -g pm2
 
 # Configure firewall
 sudo ufw allow 22/tcp              # SSH
+sudo ufw allow 21/tcp              # FTP
 sudo ufw allow 3001/tcp            # VM Manager API
 sudo ufw allow 25565:25665/tcp     # Minecraft
 sudo ufw allow 25565:25665/udp
@@ -57,6 +58,7 @@ sudo ufw allow 27015:27115/tcp     # CS2
 sudo ufw allow 27015:27115/udp
 sudo ufw allow 28015:28115/tcp     # Rust
 sudo ufw allow 28015:28115/udp
+sudo ufw allow 40000:40100/tcp     # FTP Passive Mode
 sudo ufw --force enable
 
 echo "✅ System setup complete!"
@@ -187,13 +189,53 @@ Value: (paste the API key from Step 4)
 8. Click **"Redeploy"**
 9. Wait for deployment to complete
 
-### Step 9: Create Your First Server!
+### Step 9: Setup FTP File Access (Recommended)
+
+Enable per-user FTP access so users can manage their server files:
+
+```bash
+cd /opt/gamecontrol-vm
+
+# Download FTP setup script
+curl -L -o setup-ftp.sh https://raw.githubusercontent.com/anthev-stack/Gamecontrol/main/vm-manager/setup-ftp.sh
+
+# Make executable
+chmod +x setup-ftp.sh
+
+# Run setup (installs vsftpd)
+sudo ./setup-ftp.sh
+```
+
+This installs and configures:
+- ✅ vsftpd FTP server
+- ✅ Chroot jails for user isolation
+- ✅ Firewall rules for FTP ports
+- ✅ Passive mode configuration
+
+**Optional: Enable FTPS (Encrypted FTP)**
+
+```bash
+# Download SSL setup script
+curl -L -o enable-ftp-ssl.sh https://raw.githubusercontent.com/anthev-stack/Gamecontrol/main/vm-manager/enable-ftp-ssl.sh
+
+chmod +x enable-ftp-ssl.sh
+sudo ./enable-ftp-ssl.sh
+```
+
+**Verify FTP is running:**
+```bash
+sudo systemctl status vsftpd
+```
+
+### Step 10: Create Your First Server!
 
 1. Go to your GameControl panel URL
 2. Sign in
-3. Click **"Create Server"**
-4. Fill in the details
+3. **Click "Setup FTP Access"** (new feature!)
+4. **Save your FTP password** when shown
 5. Click **"Create Server"**
+6. Fill in the details
+7. Click **"Create Server"**
 
 **Check on VPS:**
 ```bash
@@ -201,6 +243,13 @@ docker ps
 ```
 
 You should see your server container running! 🎮
+
+**Check FTP:**
+```bash
+ls -la /home/gamecontrol-ftp/
+```
+
+You should see your user's FTP directory!
 
 ---
 
@@ -334,6 +383,19 @@ docker pull didstopia/rust-server:latest
 ```
 
 This can take 10-30 minutes depending on your connection.
+
+### Download FTP Manager Module
+
+The FTP system needs the ftp-manager.js module:
+
+```bash
+cd /opt/gamecontrol-vm
+
+# Download FTP manager module
+curl -L -o ftp-manager.js https://raw.githubusercontent.com/anthev-stack/Gamecontrol/main/vm-manager/ftp-manager.js
+
+echo "✅ FTP manager downloaded"
+```
 
 ---
 
@@ -514,6 +576,39 @@ pm2 show gamecontrol-vm
 4. **Check firewall** allows port 3001
 5. **View VM Manager logs** for errors
 
+### FTP Not Working
+
+**Check FTP Server Status:**
+```bash
+sudo systemctl status vsftpd
+```
+
+**Restart FTP Server:**
+```bash
+sudo systemctl restart vsftpd
+```
+
+**Check FTP User List:**
+```bash
+cat /etc/vsftpd.userlist
+```
+
+**Check FTP Logs:**
+```bash
+sudo journalctl -u vsftpd -f
+```
+
+**Test FTP Connection:**
+```bash
+# From local machine
+telnet YOUR-VPS-IP 21
+```
+
+**Check Firewall:**
+```bash
+sudo ufw status | grep -E "21|40000"
+```
+
 ---
 
 ## Security Best Practices
@@ -666,12 +761,15 @@ systemctl status docker  # Docker status
 
 After successful deployment:
 
-1. ✅ Create test server in GameControl panel
-2. ✅ Verify container creation with `docker ps`
-3. ✅ Test connecting to game server
-4. ✅ Set up monitoring/alerts
-5. ✅ Configure automated backups
-6. ✅ Document your server IPs for players
+1. ✅ Setup FTP access (run `setup-ftp.sh`)
+2. ✅ Create test server in GameControl panel
+3. ✅ Setup your FTP account in dashboard
+4. ✅ Verify container creation with `docker ps`
+5. ✅ Test FTP connection with FileZilla
+6. ✅ Test connecting to game server
+7. ✅ Set up monitoring/alerts
+8. ✅ Configure automated backups
+9. ✅ Document your server IPs for players
 
 ---
 
@@ -689,9 +787,17 @@ After successful deployment:
 - [Docker Documentation](https://docs.docker.com/)
 - [PM2 Documentation](https://pm2.keymetrics.io/)
 - [Ubuntu Server Guide](https://ubuntu.com/server/docs)
+- [vsftpd Documentation](https://security.appspot.com/vsftpd.html)
+- [FileZilla Documentation](https://wiki.filezilla-project.org/)
 - [CS2 Docker Image](https://github.com/joedwards32/CS2)
 - [Minecraft Docker Image](https://github.com/itzg/docker-minecraft-server)
 - [Rust Docker Image](https://github.com/Didstopia/rust-server)
+
+## FTP File Management
+
+For complete FTP setup and usage guide, see:
+- **`docs/FTP_SETUP.md`** - Complete per-user FTP guide
+- **`FTP_FEATURE_SUMMARY.md`** - FTP system overview
 
 ---
 
