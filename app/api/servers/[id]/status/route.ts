@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { ServerStatus } from '@prisma/client'
+import { startServerOnVM, stopServerOnVM, restartServerOnVM } from '@/lib/vm-client'
 
 export async function POST(
   request: NextRequest,
@@ -49,6 +50,7 @@ export async function POST(
         newStatus = server.status
     }
 
+    // Update status to transitioning state
     const updatedServer = await prisma.server.update({
       where: { id: params.id },
       data: {
@@ -57,16 +59,39 @@ export async function POST(
       }
     })
 
-    // In a real implementation, you would trigger actual server start/stop commands here
-    // This could involve SSH connections to your VPS, Docker commands, etc.
-    // For now, we'll simulate it by updating the status after a delay
-    setTimeout(async () => {
-      const finalStatus = action === 'stop' ? ServerStatus.STOPPED : ServerStatus.RUNNING
+    // If server has containerI'd, actually control it on VM
+    if (server.containerId) {
+      let vmResult
+      
+      if (action === 'start') {
+        vmResult = await startServerOnVM(server.containerId)
+      } else if (action === 'stop') {
+        vmResult = await stopServerOnVM(server.containerId)
+      } else if (action === 'restart') {
+        vmResult = await restartServerOnVM(server.containerId)
+      }
+
+      // Update final status based on VM result
+      const finalStatus = vmResult?.error 
+        ? ServerStatus.ERROR 
+        : action === 'stop' 
+          ? ServerStatus.STOPPED 
+          : ServerStatus.RUNNING
+
       await prisma.server.update({
         where: { id: params.id },
         data: { status: finalStatus }
       })
-    }, 3000)
+    } else {
+      // No container ID - simulate for demo (VM not connected yet)
+      setTimeout(async () => {
+        const finalStatus = action === 'stop' ? ServerStatus.STOPPED : ServerStatus.RUNNING
+        await prisma.server.update({
+          where: { id: params.id },
+          data: { status: finalStatus }
+        })
+      }, 3000)
+    }
 
     return NextResponse.json(updatedServer)
   } catch (error) {

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { GameType } from '@prisma/client'
+import { deleteServerFromVM } from '@/lib/vm-client'
 
 export async function GET(
   request: NextRequest,
@@ -123,13 +124,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Server not found' }, { status: 404 })
     }
 
-    // TODO: In production, destroy the server container on VM before deleting
-    // This would involve:
-    // 1. Stop container
-    // 2. Remove container
-    // 3. Clean up resources
-    // 4. Release port allocation
+    // Delete from VM if container exists
+    if (server.containerId) {
+      await deleteServerFromVM(server.containerId)
+    }
 
+    // Delete from database
     await prisma.server.delete({
       where: { id: params.id }
     })

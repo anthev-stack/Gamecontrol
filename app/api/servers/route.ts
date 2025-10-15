@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { GameType } from '@prisma/client'
+import { createServerOnVM } from '@/lib/vm-client'
 
 export async function GET() {
   try {
@@ -95,12 +96,38 @@ export async function POST(request: NextRequest) {
       data: serverData
     })
 
-    // TODO: In production, make API call to VM to actually create the server
-    // This would involve:
-    // 1. SSH to VM or call VM API
-    // 2. Allocate resources
-    // 3. Start Docker container with game server
-    // 4. Update server record with actual host, port, containerId
+    // Create server on VM
+    const vmResult = await createServerOnVM(
+      game as string,
+      name,
+      {
+        ...gameSpecificFields,
+        maxPlayers: server.maxPlayers,
+        allocatedRam: server.allocatedRam,
+        rconPassword: server.rconPassword || 'changeme'
+      },
+      server.id
+    )
+
+    // Update server with VM details
+    if (vmResult.containerId && vmResult.host) {
+      await prisma.server.update({
+        where: { id: server.id },
+        data: {
+          host: vmResult.host,
+          port: vmResult.port || server.port,
+          rconPort: vmResult.rconPort || server.rconPort,
+          containerId: vmResult.containerId
+        }
+      })
+      
+      // Fetch updated server
+      const updatedServer = await prisma.server.findUnique({
+        where: { id: server.id }
+      })
+      
+      return NextResponse.json(updatedServer, { status: 201 })
+    }
 
     return NextResponse.json(server, { status: 201 })
   } catch (error) {
