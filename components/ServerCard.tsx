@@ -48,6 +48,78 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
     }
   }
 
+  // Render game-specific details
+  const renderGameDetails = () => {
+    if (server.game === 'CS2') {
+      return (
+        <>
+          {server.map && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Map:</span>
+              <span className="text-gray-200">{server.map}</span>
+            </div>
+          )}
+          {server.gameMode && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Mode:</span>
+              <span className="text-gray-200 capitalize">{server.gameMode}</span>
+            </div>
+          )}
+          {server.tickrate && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Tickrate:</span>
+              <span className="text-gray-200">{server.tickrate} tick</span>
+            </div>
+          )}
+        </>
+      )
+    } else if (server.game === 'MINECRAFT') {
+      return (
+        <>
+          {server.difficulty && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Difficulty:</span>
+              <span className="text-gray-200 capitalize">{server.difficulty}</span>
+            </div>
+          )}
+          {server.worldType && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">World Type:</span>
+              <span className="text-gray-200 capitalize">{server.worldType}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400">PvP:</span>
+            <span className="text-gray-200">{server.pvp ? 'Enabled' : 'Disabled'}</span>
+          </div>
+          {server.hardcore && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Mode:</span>
+              <span className="text-red-400">Hardcore</span>
+            </div>
+          )}
+        </>
+      )
+    } else if (server.game === 'RUST') {
+      return (
+        <>
+          {server.worldSize && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">World Size:</span>
+              <span className="text-gray-200">{server.worldSize}</span>
+            </div>
+          )}
+          {server.worldSeed && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Seed:</span>
+              <span className="text-gray-200 font-mono text-xs">{server.worldSeed}</span>
+            </div>
+          )}
+        </>
+      )
+    }
+  }
+
   return (
     <div className="bg-gray-800 rounded-lg shadow-xl overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors">
       <div className="p-6">
@@ -66,28 +138,31 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
         </div>
 
         <div className="space-y-2 mb-4">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Host:</span>
-            <span className="text-gray-200">{server.host}:{server.port}</span>
-          </div>
+          {server.host && server.port ? (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Server:</span>
+              <span className="text-gray-200 font-mono">{server.host}:{server.port}</span>
+            </div>
+          ) : (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Server:</span>
+              <span className="text-yellow-400 text-xs">Pending VM allocation</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">Max Players:</span>
             <span className="text-gray-200">{server.maxPlayers}</span>
           </div>
-          {server.map && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Map:</span>
-              <span className="text-gray-200">{server.map}</span>
-            </div>
-          )}
+          {renderGameDetails()}
         </div>
 
         <div className="flex gap-2 mb-3">
           {server.status === 'STOPPED' && (
             <button
               onClick={() => handleStatusChange('start')}
-              disabled={isLoading}
+              disabled={isLoading || !server.host}
               className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!server.host ? 'Server must be deployed to VM first' : ''}
             >
               Start
             </button>
@@ -138,4 +213,3 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
     </div>
   )
 }
-

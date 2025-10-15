@@ -28,6 +28,18 @@ export async function GET() {
   }
 }
 
+// Helper function to allocate port (will be replaced with actual VM allocation)
+function allocatePort(game: GameType): number {
+  const basePorts: Record<GameType, number> = {
+    CS2: 27015,
+    MINECRAFT: 25565,
+    RUST: 28015
+  }
+  // In production, this would query the VM to find an available port
+  // For now, return base port (will be properly implemented with VM integration)
+  return basePorts[game] + Math.floor(Math.random() * 100)
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -37,27 +49,57 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, game, host, port, rconPort, rconPassword, maxPlayers, map, gameMode, customArgs } = body
+    const { name, game, maxPlayers, customArgs, ...gameSpecificFields } = body
 
-    if (!name || !game || !host || !port) {
+    if (!name || !game) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // Auto-assign port based on game type (will be replaced with VM allocation)
+    const port = allocatePort(game as GameType)
+    const rconPort = port + 100
+
+    // Build server data
+    const serverData: any = {
+      name,
+      game: game as GameType,
+      maxPlayers: maxPlayers ? parseInt(maxPlayers) : 10,
+      customArgs,
+      host: null, // Will be set by VM
+      port: port,
+      rconPort: rconPort,
+      userId: session.user.id
+    }
+
+    // Add game-specific fields
+    if (game === 'CS2') {
+      serverData.tickrate = gameSpecificFields.tickrate ? parseInt(gameSpecificFields.tickrate) : 128
+      serverData.map = gameSpecificFields.map || 'de_dust2'
+      serverData.gameMode = gameSpecificFields.gameMode || 'competitive'
+    } else if (game === 'MINECRAFT') {
+      serverData.difficulty = gameSpecificFields.difficulty || 'normal'
+      serverData.worldType = gameSpecificFields.worldType || 'default'
+      serverData.pvp = gameSpecificFields.pvp ?? true
+      serverData.hardcore = gameSpecificFields.hardcore ?? false
+      serverData.spawnProtection = gameSpecificFields.spawnProtection ? parseInt(gameSpecificFields.spawnProtection) : 16
+      serverData.allowNether = gameSpecificFields.allowNether ?? true
+      serverData.allowFlight = gameSpecificFields.allowFlight ?? false
+    } else if (game === 'RUST') {
+      serverData.worldSize = gameSpecificFields.worldSize ? parseInt(gameSpecificFields.worldSize) : 4000
+      serverData.worldSeed = gameSpecificFields.worldSeed || null
+      serverData.saveInterval = gameSpecificFields.saveInterval ? parseInt(gameSpecificFields.saveInterval) : 600
+    }
+
     const server = await prisma.server.create({
-      data: {
-        name,
-        game: game as GameType,
-        host,
-        port: parseInt(port),
-        rconPort: rconPort ? parseInt(rconPort) : null,
-        rconPassword,
-        maxPlayers: maxPlayers ? parseInt(maxPlayers) : 10,
-        map,
-        gameMode,
-        customArgs,
-        userId: session.user.id
-      }
+      data: serverData
     })
+
+    // TODO: In production, make API call to VM to actually create the server
+    // This would involve:
+    // 1. SSH to VM or call VM API
+    // 2. Allocate resources
+    // 3. Start Docker container with game server
+    // 4. Update server record with actual host, port, containerId
 
     return NextResponse.json(server, { status: 201 })
   } catch (error) {
@@ -65,4 +107,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create server' }, { status: 500 })
   }
 }
-

@@ -25,17 +25,38 @@ model Server {
   game        GameType
   status      ServerStatus @default(STOPPED)
   
-  // Server details
-  host        String
-  port        Int
+  // Server details (auto-assigned by VM)
+  host        String?
+  port        Int?
   rconPort    Int?
   rconPassword String?
   
-  // Game-specific config
+  // Common config
   maxPlayers  Int          @default(10)
-  map         String?
-  gameMode    String?
   customArgs  String?
+  
+  // CS2 specific
+  tickrate    Int?         // 64 or 128
+  map         String?      // de_dust2, de_mirage, etc
+  gameMode    String?      // competitive, casual, deathmatch
+  
+  // Minecraft specific
+  difficulty  String?      // peaceful, easy, normal, hard
+  worldType   String?      // default, flat, largeBiomes, amplified
+  pvp         Boolean?     @default(true)
+  hardcore    Boolean?     @default(false)
+  spawnProtection Int?     @default(16)
+  allowNether Boolean?     @default(true)
+  allowFlight Boolean?     @default(false)
+  
+  // Rust specific
+  worldSize   Int?         @default(4000)
+  worldSeed   String?
+  saveInterval Int?        @default(600)
+  
+  // VM details
+  vmId        String?      // VM identifier
+  containerId String?      // Docker container ID
   
   // Metadata
   createdAt   DateTime     @default(now())
