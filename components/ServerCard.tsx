@@ -200,6 +200,17 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
           )}
         </div>
 
+        {server.ftpPath && (
+          <div className="mb-3 pt-3 border-t border-gray-700">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-400">📁 FTP Path:</span>
+              <code className="text-blue-400 bg-gray-900 px-2 py-1 rounded">
+                /{server.ftpPath}
+              </code>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-2 pt-3 border-t border-gray-700">
           <button
             onClick={() => onEdit(server)}

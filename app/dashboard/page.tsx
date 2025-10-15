@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import useSWR from 'swr'
 import ServerCard from '@/components/ServerCard'
 import ServerModal from '@/components/ServerModal'
+import FTPCredentials from '@/components/FTPCredentials'
 import { Server } from '@prisma/client'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -85,6 +86,11 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* FTP Credentials Section */}
+        <div className="mb-8">
+          <FTPCredentials />
+        </div>
+
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-bold text-white">Your Servers</h2>
           <button

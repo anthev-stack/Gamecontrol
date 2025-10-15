@@ -111,13 +111,40 @@ export async function POST(request: NextRequest) {
 
     // Update server with VM details
     if (vmResult.containerId && vmResult.host) {
+      // Link server files to FTP if VM is configured
+      let ftpPath = null
+      if (process.env.VM_API_URL && process.env.VM_API_KEY) {
+        try {
+          const ftpResponse = await fetch(`${process.env.VM_API_URL}/api/ftp/link`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': process.env.VM_API_KEY
+            },
+            body: JSON.stringify({
+              containerId: vmResult.containerId,
+              userId: session.user.id,
+              serverName: name.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase()
+            })
+          })
+          
+          if (ftpResponse.ok) {
+            const ftpData = await ftpResponse.json()
+            ftpPath = ftpData.ftpPath
+          }
+        } catch (error) {
+          console.error('Error linking FTP:', error)
+        }
+      }
+      
       await prisma.server.update({
         where: { id: server.id },
         data: {
           host: vmResult.host,
           port: vmResult.port || server.port,
           rconPort: vmResult.rconPort || server.rconPort,
-          containerId: vmResult.containerId
+          containerId: vmResult.containerId,
+          ftpPath: ftpPath
         }
       })
       
