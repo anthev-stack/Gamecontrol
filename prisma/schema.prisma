@@ -1,0 +1,68 @@
+// This is your Prisma schema file
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  servers   Server[]
+}
+
+model Server {
+  id          String       @id @default(cuid())
+  name        String
+  game        GameType
+  status      ServerStatus @default(STOPPED)
+  
+  // Server details
+  host        String
+  port        Int
+  rconPort    Int?
+  rconPassword String?
+  
+  // Game-specific config
+  maxPlayers  Int          @default(10)
+  map         String?
+  gameMode    String?
+  customArgs  String?
+  
+  // Metadata
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  lastStarted DateTime?
+  
+  // Relations
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum GameType {
+  CS2
+  MINECRAFT
+  RUST
+}
+
+enum ServerStatus {
+  RUNNING
+  STOPPED
+  STARTING
+  STOPPING
+  ERROR
+}
+
