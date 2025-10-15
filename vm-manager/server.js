@@ -125,7 +125,23 @@ app.post('/api/servers', authenticate, async (req, res) => {
           `MAXPLAYERS=${config.maxPlayers || 10}`,
           `STARTMAP=${config.map || 'de_dust2'}`,
           `GAMEMODE=${config.gameMode || 'competitive'}`,
-          `HOSTNAME=${name}`
+          `HOSTNAME=${name}`,
+          'CS2_SERVERNAME=GameControl Server',
+          'CS2_CHEATS=0',
+          'CS2_SERVER_HIBERNATE=0',
+          'CS2_RCON_PORT=${rconPort}',
+          'CS2_LAN=0',
+          'CS2_RCONPW=${config.rconPassword || "changeme"}',
+          'CS2_PW=""',
+          'CS2_MAXPLAYERS=${config.maxPlayers || 10}',
+          'CS2_ADDITIONAL_ARGS=""',
+          'CS2_CFG_URL=""',
+          // Auto-update settings
+          'STEAMCMD_VALIDATE=1',  // Validates files on each start
+          'CS2_GAMETYPE=0',
+          'CS2_GAMEMODE=1',
+          'CS2_MAPGROUP=mg_active',
+          'CS2_STARTMAP=${config.map || "de_dust2"}'
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},
@@ -192,7 +208,14 @@ app.post('/api/servers', authenticate, async (req, res) => {
           `RUST_SERVER_WORLDSIZE=${config.worldSize || 4000}`,
           `RUST_SERVER_SEED=${config.worldSeed || ''}`,
           `RUST_SERVER_SAVE_INTERVAL=${config.saveInterval || 600}`,
-          'RUST_SERVER_STARTUP_ARGUMENTS=-batchmode -load'
+          'RUST_SERVER_STARTUP_ARGUMENTS=-batchmode -load',
+          // Auto-update settings
+          'RUST_UPDATE_CHECKING=1',  // Check for updates
+          'RUST_UPDATE_BRANCH=public',  // Use public branch
+          'RUST_START_MODE=2',  // Update and start
+          'RUST_OXIDE_ENABLED=0',  // Disable Oxide/uMod by default
+          'RUST_RCON_WEB=1',  // Enable RCON web interface
+          'RUST_APP_PORT=28082'  // App port for web interface
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},
@@ -275,6 +298,45 @@ app.post('/api/servers/:containerId/restart', authenticate, async (req, res) => 
     res.json({ message: 'Server restarted', status: 'running' })
   } catch (error) {
     console.error('❌ Error restarting server:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Update server (pull latest image and recreate container)
+app.post('/api/servers/:containerId/update', authenticate, async (req, res) => {
+  try {
+    console.log(`🔄 Updating container: ${req.params.containerId}`)
+    const container = docker.getContainer(req.params.containerId)
+    const info = await container.inspect()
+    
+    // Get image name
+    const imageName = info.Config.Image
+    console.log(`📥 Pulling latest ${imageName}...`)
+    
+    // Pull latest image
+    await new Promise((resolve, reject) => {
+      docker.pull(imageName, (err, stream) => {
+        if (err) return reject(err)
+        docker.modem.followProgress(stream, (err, output) => {
+          if (err) return reject(err)
+          resolve(output)
+        })
+      })
+    })
+    
+    console.log(`✅ Image updated, restarting container...`)
+    
+    // Restart container to use new image
+    await container.restart({ t: 30 })
+    
+    console.log(`✅ Server updated and restarted`)
+    res.json({ 
+      message: 'Server updated successfully', 
+      status: 'running',
+      note: 'Server will download updates on next restart'
+    })
+  } catch (error) {
+    console.error('❌ Error updating server:', error)
     res.status(500).json({ error: error.message })
   }
 })
@@ -375,6 +437,7 @@ loadUsedPorts().then(() => {
     console.log('  POST /api/servers/:id/start     - Start server')
     console.log('  POST /api/servers/:id/stop      - Stop server')
     console.log('  POST /api/servers/:id/restart   - Restart server')
+    console.log('  POST /api/servers/:id/update    - Update server (Steam)')
     console.log('  GET  /api/servers/:id           - Get server status')
     console.log('  DELETE /api/servers/:id         - Delete server')
     console.log('')
