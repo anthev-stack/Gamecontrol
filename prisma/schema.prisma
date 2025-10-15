@@ -33,6 +33,7 @@ model Server {
   
   // Common config
   maxPlayers  Int          @default(10)
+  allocatedRam Int         @default(2048) // RAM in MB
   customArgs  String?
   
   // CS2 specific

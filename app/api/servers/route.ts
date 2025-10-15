@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, game, maxPlayers, customArgs, ...gameSpecificFields } = body
+    const { name, game, maxPlayers, allocatedRam, customArgs, ...gameSpecificFields } = body
 
     if (!name || !game) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
       name,
       game: game as GameType,
       maxPlayers: maxPlayers ? parseInt(maxPlayers) : 10,
+      allocatedRam: allocatedRam ? parseInt(allocatedRam) : 2048,
       customArgs,
       host: null, // Will be set by VM
       port: port,

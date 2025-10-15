@@ -64,6 +64,7 @@ export async function PATCH(
     if (body.name) updateData.name = body.name
     if (body.game) updateData.game = body.game as GameType
     if (body.maxPlayers) updateData.maxPlayers = parseInt(body.maxPlayers)
+    if (body.allocatedRam) updateData.allocatedRam = parseInt(body.allocatedRam)
     if (body.customArgs !== undefined) updateData.customArgs = body.customArgs
 
     // CS2 specific

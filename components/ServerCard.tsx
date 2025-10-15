@@ -2,6 +2,7 @@
 
 import { Server, GameType, ServerStatus } from '@prisma/client'
 import { useState } from 'react'
+import { formatRam } from '@/lib/ram-calculator'
 
 interface ServerCardProps {
   server: Server
@@ -152,6 +153,10 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">Max Players:</span>
             <span className="text-gray-200">{server.maxPlayers}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400">RAM:</span>
+            <span className="text-gray-200">{formatRam(server.allocatedRam || 2048)}</span>
           </div>
           {renderGameDetails()}
         </div>
