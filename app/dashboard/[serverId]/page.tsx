@@ -125,13 +125,13 @@ function ConsoleTab({ server }: { server: Server }) {
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
+    <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium text-gray-900">Web Console</h3>
+        <h3 className="text-lg font-medium text-white">Web Console</h3>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-300">
               {isConnected ? 'Connected' : 'Disconnected'}
             </span>
           </div>
@@ -146,7 +146,7 @@ function ConsoleTab({ server }: { server: Server }) {
 
       <div className="bg-black text-green-400 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto mb-4">
         {logs.length === 0 ? (
-          <div className="text-gray-500">Loading console output...</div>
+          <div className="text-gray-400">Loading console output...</div>
         ) : (
           logs.map((log, index) => (
             <div key={index} className="mb-1">
@@ -175,7 +175,7 @@ function ConsoleTab({ server }: { server: Server }) {
         </button>
       </form>
 
-      <div className="mt-2 text-xs text-gray-500">
+      <div className="mt-2 text-xs text-gray-400">
         <p>💡 <strong>Tips:</strong></p>
         <ul className="list-disc list-inside ml-4 space-y-1">
           <li>Use <code className="bg-gray-100 px-1 rounded">status</code> to check server status</li>
@@ -299,10 +299,10 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading server details...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto"></div>
+          <p className="mt-4 text-white">Loading server details...</p>
         </div>
       </div>
     )
@@ -310,10 +310,10 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
 
   if (error || !server) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-600 text-xl mb-4">⚠️ Error</div>
-          <p className="text-gray-600 mb-4">{error || 'Server not found'}</p>
+          <div className="text-red-400 text-xl mb-4">⚠️ Error</div>
+          <p className="text-white mb-4">{error || 'Server not found'}</p>
           <button
             onClick={() => router.push('/dashboard')}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
@@ -425,13 +425,13 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
     return (
       <div className="space-y-6">
         {/* Manual Update */}
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
           <h3 className="text-lg font-semibold mb-4">Manual Steam Update</h3>
           
           <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
             <div>
               <h4 className="font-medium">Update Game Server</h4>
-              <p className="text-sm text-gray-600">Download and install the latest game updates immediately</p>
+              <p className="text-sm text-gray-300">Download and install the latest game updates immediately</p>
             </div>
             <button
               onClick={handleSteamUpdate}
@@ -452,7 +452,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         </div>
 
         {/* Scheduled Tasks */}
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Scheduled Tasks</h3>
             <button
@@ -464,7 +464,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
           </div>
 
           {scheduledTasks.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-400">
               <p>No scheduled tasks configured</p>
               <p className="text-sm">Create a task to automate server updates</p>
             </div>
@@ -481,11 +481,11 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
                         {task.enabled ? 'Enabled' : 'Disabled'}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-300">
                       {task.type.replace('_', ' ')} • {task.schedule}
                     </p>
                     {task.nextRun && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-400">
                         Next run: {new Date(task.nextRun).toLocaleString()}
                       </p>
                     )}
@@ -517,7 +517,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         {/* Create Task Modal */}
         {showCreateTask && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700-lg w-full max-w-md">
               <h3 className="text-lg font-semibold mb-4">Create Scheduled Task</h3>
               
               <div className="space-y-4">
@@ -612,7 +612,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
                       })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-400 mt-1">
                       Examples: say Hello World, kick player_name, changelevel de_dust2
                     </p>
                   </div>
@@ -627,7 +627,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="0 2 * * * (daily at 2 AM)"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-400 mt-1">
                     Examples: 0 2 * * * (daily at 2 AM), 0 0 * * 0 (weekly on Sunday), 0 0 1 * * (monthly on 1st)
                   </p>
                 </div>
@@ -649,7 +649,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   onClick={() => setShowCreateTask(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  className="px-4 py-2 text-gray-300 hover:text-gray-800"
                 >
                   Cancel
                 </button>
@@ -679,25 +679,25 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-gray-800 shadow-sm border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="mr-4 text-gray-500 hover:text-gray-700"
+                className="mr-4 text-gray-300 hover:text-white"
               >
                 ← Back
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">{server.name}</h1>
+              <h1 className="text-2xl font-bold text-white">{server.name}</h1>
               <div className="ml-4 flex items-center">
                 <div className={`w-3 h-3 rounded-full mr-2 ${
                   stats?.status === 'online' ? 'bg-green-500' : 
                   stats?.status === 'offline' ? 'bg-gray-400' : 'bg-red-500'
                 }`}></div>
-                <span className="text-sm text-gray-600 capitalize">
+                <span className="text-sm text-gray-300 capitalize">
                   {stats?.status || 'Unknown'}
                 </span>
               </div>
@@ -729,7 +729,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b">
+      <div className="bg-gray-800 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8">
             {tabs.map((tab) => (
@@ -738,8 +738,8 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
                 onClick={() => setActiveTab(tab.id)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-400 text-blue-400'
+                    : 'border-transparent text-gray-400 hover:text-white hover:border-gray-500'
                 }`}
               >
                 <span className="mr-2">{tab.icon}</span>
@@ -756,32 +756,32 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
           <div className="space-y-6">
             {/* Server Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Players</h3>
+              <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+                <h3 className="text-lg font-medium text-white mb-2">Players</h3>
                 <div className="text-3xl font-bold text-blue-600">
                   {stats?.playerCount || 0} / {stats?.maxPlayers || server.maxPlayers}
                 </div>
               </div>
               
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">CPU Usage</h3>
+              <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+                <h3 className="text-lg font-medium text-white mb-2">CPU Usage</h3>
                 <div className="text-3xl font-bold text-green-600">
                   {stats?.cpuUsage || 0}%
                 </div>
               </div>
               
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Memory</h3>
+              <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+                <h3 className="text-lg font-medium text-white mb-2">Memory</h3>
                 <div className="text-3xl font-bold text-purple-600">
                   {stats?.memoryUsed ? `${Math.round(stats.memoryUsed / 1024 / 1024)}MB` : '0MB'}
                 </div>
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-400">
                   of {Math.round(server.allocatedRam / 1024)}MB
                 </div>
               </div>
               
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Uptime</h3>
+              <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+                <h3 className="text-lg font-medium text-white mb-2">Uptime</h3>
                 <div className="text-3xl font-bold text-indigo-600">
                   {stats?.uptime || 'Unknown'}
                 </div>
@@ -789,8 +789,8 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
             </div>
 
             {/* Connection Info */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Connection Information</h3>
+            <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+              <h3 className="text-lg font-medium text-white mb-4">Connection Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Server Address</label>
@@ -820,34 +820,34 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
             </div>
 
             {/* Server Configuration */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Server Configuration</h3>
+            <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+              <h3 className="text-lg font-medium text-white mb-4">Server Configuration</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Game Type</label>
-                  <div className="mt-1 text-sm text-gray-900">{server.game}</div>
+                  <div className="mt-1 text-sm text-white">{server.game}</div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Max Players</label>
-                  <div className="mt-1 text-sm text-gray-900">{server.maxPlayers}</div>
+                  <div className="mt-1 text-sm text-white">{server.maxPlayers}</div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Allocated RAM</label>
-                  <div className="mt-1 text-sm text-gray-900">{server.allocatedRam}MB</div>
+                  <div className="mt-1 text-sm text-white">{server.allocatedRam}MB</div>
                 </div>
                 {server.game === 'CS2' && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Tickrate</label>
-                      <div className="mt-1 text-sm text-gray-900">{server.tickrate || 128}</div>
+                      <div className="mt-1 text-sm text-white">{server.tickrate || 128}</div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Map</label>
-                      <div className="mt-1 text-sm text-gray-900">{server.map || 'de_dust2'}</div>
+                      <div className="mt-1 text-sm text-white">{server.map || 'de_dust2'}</div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Game Mode</label>
-                      <div className="mt-1 text-sm text-gray-900">{server.gameMode || 'competitive'}</div>
+                      <div className="mt-1 text-sm text-white">{server.gameMode || 'competitive'}</div>
                     </div>
                   </>
                 )}
@@ -865,31 +865,31 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         )}
 
         {activeTab === 'tasks' && (
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Scheduled Tasks</h3>
+          <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+            <h3 className="text-lg font-medium text-white mb-4">Scheduled Tasks</h3>
             <div className="space-y-4">
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium text-gray-900">Steam Updates</h4>
-                <p className="text-sm text-gray-600 mb-3">
+                <h4 className="font-medium text-white">Steam Updates</h4>
+                <p className="text-sm text-gray-300 mb-3">
                   Schedule automatic Steam updates for your server.
                 </p>
-                <div className="text-sm text-gray-500">Feature coming soon!</div>
+                <div className="text-sm text-gray-400">Feature coming soon!</div>
               </div>
               
               <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium text-gray-900">Map Rotation</h4>
-                <p className="text-sm text-gray-600 mb-3">
+                <h4 className="font-medium text-white">Map Rotation</h4>
+                <p className="text-sm text-gray-300 mb-3">
                   Schedule map changes for supported games.
                 </p>
-                <div className="text-sm text-gray-500">Feature coming soon!</div>
+                <div className="text-sm text-gray-400">Feature coming soon!</div>
               </div>
             </div>
           </div>
         )}
 
         {activeTab === 'settings' && (
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Server Settings</h3>
+          <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+            <h3 className="text-lg font-medium text-white mb-4">Server Settings</h3>
             <div className="space-y-6">
               <div className="p-4 bg-red-50 rounded-lg">
                 <h4 className="font-medium text-red-900">Danger Zone</h4>
@@ -918,7 +918,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
 
       {/* Error Message */}
       {error && (
-        <div className="fixed bottom-4 right-4 bg-red-600 text-white p-4 rounded-lg shadow-lg">
+        <div className="fixed bottom-4 right-4 bg-red-600 text-white p-4 rounded-lg shadow border border-gray-700-lg">
           <div className="flex items-center">
             <span className="mr-2">⚠️</span>
             <span>{error}</span>
