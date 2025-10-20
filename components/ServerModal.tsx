@@ -64,6 +64,8 @@ export default function ServerModal({ server, onClose }: ServerModalProps) {
         tickrate: server.tickrate?.toString() || '128',
         map: server.map || 'de_dust2',
         gameMode: server.gameMode || 'competitive',
+        workshopMapId: server.workshopMapId || '',
+        steamAccount: server.steamAccount || '',
         
         // Minecraft
         difficulty: server.difficulty || 'normal',
