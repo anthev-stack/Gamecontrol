@@ -126,23 +126,14 @@ app.post('/api/servers', authenticate, async (req, res) => {
     
     if (gameType === 'CS2') {
       containerConfig = {
-        Image: 'cs2server/cs2:latest',
+        Image: 'steamcmd/steamcmd:latest',
         name: containerName,
         Env: [
-          `SRCDS_PORT=${port}`,
-          `SRCDS_RCON_PORT=${rconPort}`,
-          `SRCDS_RCONPW=${config.rconPassword || 'changeme'}`,
-          `SRCDS_TICKRATE=${config.tickrate || 128}`,
-          `SRCDS_MAXPLAYERS=${config.maxPlayers || 10}`,
-          `SRCDS_STARTMAP=${config.map || 'de_dust2'}`,
-          `SRCDS_HOSTNAME=${name}`,
-          'SRCDS_GAMETYPE=0',
-          'SRCDS_GAMEMODE=1',
-          'SRCDS_MAPGROUP=mg_active',
-          'SRCDS_LAN=0',
-          'SRCDS_PW=',
-          'SRCDS_ADDITIONAL_ARGS=',
           'STEAMCMD_VALIDATE=1'
+        ],
+        Cmd: [
+          'bash', '-c',
+          'steamcmd +login anonymous +app_update 730 +quit && cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server && ./game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon +game_type 0 +game_mode 1 +map de_dust2 +maxplayers 10 +port 27015 +rcon_port 27115 +rcon_password changeme'
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},
