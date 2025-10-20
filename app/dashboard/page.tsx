@@ -48,6 +48,25 @@ export default function DashboardPage() {
     mutate()
   }
 
+  const handleLinkAllFTP = async () => {
+    try {
+      const response = await fetch('/api/servers/link-all-ftp', {
+        method: 'POST'
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        alert(`Successfully linked ${result.linked} out of ${result.total} servers to FTP!`)
+        mutate() // Refresh server data
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
+      }
+    } catch (error) {
+      alert(`Error: ${(error as Error).message}`)
+    }
+  }
+
   const handleDeleteServer = async (serverId: string) => {
     if (!confirm('Are you sure you want to delete this server?')) return
 
@@ -93,15 +112,26 @@ export default function DashboardPage() {
 
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-bold text-white">Your Servers</h2>
-          <button
-            onClick={handleCreateServer}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Create Server
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={handleLinkAllFTP}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-lg transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              Link to FTP
+            </button>
+            <button
+              onClick={handleCreateServer}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg transition-colors flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Create Server
+            </button>
+          </div>
         </div>
 
         {error && (
