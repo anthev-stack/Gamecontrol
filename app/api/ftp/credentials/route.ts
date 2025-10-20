@@ -82,31 +82,56 @@ export async function POST() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check if FTP already set up
+    // Check if FTP already set up in database
     if (user.ftpUsername && user.ftpPassword) {
       return NextResponse.json({ error: 'FTP already set up' }, { status: 400 })
     }
 
-    // Create FTP user on VM
     if (!VM_API_URL || !VM_API_KEY) {
       return NextResponse.json({ error: 'VM not configured' }, { status: 503 })
     }
 
-    const response = await fetch(`${VM_API_URL}/api/ftp/users`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': VM_API_KEY
-      },
-      body: JSON.stringify({ userId: user.id })
-    })
+    let ftpData
+    let response
 
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Failed to create FTP user on VM')
+    try {
+      // Try to create FTP user on VM
+      response = await fetch(`${VM_API_URL}/api/ftp/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': VM_API_KEY
+        },
+        body: JSON.stringify({ userId: user.id })
+      })
+
+      if (response.ok) {
+        ftpData = await response.json()
+      } else {
+        const error = await response.json()
+        
+        // If user already exists, reset the user to get new credentials
+        if (error.error && error.error.includes('already exists')) {
+          console.log('FTP user already exists, resetting to get new credentials...')
+          
+          const resetResponse = await fetch(`${VM_API_URL}/api/ftp/users/${user.id}/reset`, {
+            method: 'POST',
+            headers: { 'x-api-key': VM_API_KEY }
+          })
+          
+          if (resetResponse.ok) {
+            ftpData = await resetResponse.json()
+          } else {
+            throw new Error('Failed to reset existing FTP user')
+          }
+        } else {
+          throw new Error(error.error || 'Failed to create FTP user on VM')
+        }
+      }
+    } catch (error) {
+      console.error('Error in FTP user creation process:', error)
+      throw new Error('Failed to create FTP user: ' + (error as Error).message)
     }
-
-    const ftpData = await response.json()
 
     // Hash FTP password before storing
     const hashedPassword = await bcrypt.hash(ftpData.password, 10)

@@ -604,6 +604,31 @@ app.get('/api/ftp/users/:userId', authenticate, async (req, res) => {
   }
 })
 
+// Reset FTP user (delete and recreate with new password)
+app.post('/api/ftp/users/:userId/reset', authenticate, async (req, res) => {
+  try {
+    const userId = req.params.userId
+    const username = generateFTPUsername(userId)
+    
+    console.log(`🔄 Resetting FTP user: ${username}`)
+    
+    // Delete existing user
+    await deleteFTPUser(username)
+    
+    // Create new user with new password
+    const password = generateFTPPassword()
+    const ftpUser = await createFTPUser(userId, password)
+    
+    res.json({
+      ...ftpUser,
+      message: 'FTP user reset successfully'
+    })
+  } catch (error) {
+    console.error('❌ Error resetting FTP user:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // Change FTP password
 app.put('/api/ftp/users/:userId/password', authenticate, async (req, res) => {
   try {
