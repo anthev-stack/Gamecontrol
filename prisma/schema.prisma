@@ -76,6 +76,27 @@ model Server {
   // Relations
   userId      String
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks       ScheduledTask[]
+}
+
+model ScheduledTask {
+  id          String       @id @default(cuid())
+  name        String
+  type        TaskType
+  schedule    String       // Cron expression
+  enabled     Boolean      @default(true)
+  lastRun     DateTime?
+  nextRun     DateTime?
+  
+  // Task configuration
+  config      Json?        // Task-specific configuration
+  
+  // Relations
+  serverId    String
+  server      Server       @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 enum Role {
@@ -95,5 +116,12 @@ enum ServerStatus {
   STARTING
   STOPPING
   ERROR
+}
+
+enum TaskType {
+  STEAM_UPDATE
+  MAP_CHANGE
+  SERVER_RESTART
+  CUSTOM_COMMAND
 }
 

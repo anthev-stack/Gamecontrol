@@ -325,10 +325,355 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
     )
   }
 
+  function SteamUpdatesTab({ server }: { server: Server }) {
+    const [isUpdating, setIsUpdating] = useState(false)
+    const [updateLogs, setUpdateLogs] = useState<string[]>([])
+    const [scheduledTasks, setScheduledTasks] = useState<any[]>([])
+    const [showCreateTask, setShowCreateTask] = useState(false)
+    const [newTask, setNewTask] = useState({
+      name: '',
+      type: 'STEAM_UPDATE',
+      schedule: '',
+      enabled: true,
+      config: {}
+    })
+
+    // Load scheduled tasks
+    useEffect(() => {
+      loadScheduledTasks()
+    }, [])
+
+    const loadScheduledTasks = async () => {
+      try {
+        const response = await fetch(`/api/servers/${server.id}/tasks`)
+        if (response.ok) {
+          const tasks = await response.json()
+          setScheduledTasks(tasks)
+        }
+      } catch (error) {
+        console.error('Failed to load scheduled tasks:', error)
+      }
+    }
+
+    const handleSteamUpdate = async () => {
+      setIsUpdating(true)
+      try {
+        const response = await fetch(`/api/servers/${server.id}/update`, {
+          method: 'POST'
+        })
+        
+        if (response.ok) {
+          setUpdateLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: Steam update initiated...`])
+        } else {
+          setUpdateLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: Failed to start Steam update`])
+        }
+      } catch (error) {
+        setUpdateLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: Error: ${(error as Error).message}`])
+      } finally {
+        setIsUpdating(false)
+      }
+    }
+
+    const handleCreateTask = async () => {
+      try {
+        const response = await fetch(`/api/servers/${server.id}/tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newTask)
+        })
+        
+        if (response.ok) {
+          setShowCreateTask(false)
+          setNewTask({ name: '', type: 'STEAM_UPDATE', schedule: '', enabled: true, config: {} })
+          loadScheduledTasks()
+        }
+      } catch (error) {
+        console.error('Failed to create task:', error)
+      }
+    }
+
+    const handleDeleteTask = async (taskId: string) => {
+      try {
+        const response = await fetch(`/api/servers/${server.id}/tasks/${taskId}`, {
+          method: 'DELETE'
+        })
+        
+        if (response.ok) {
+          loadScheduledTasks()
+        }
+      } catch (error) {
+        console.error('Failed to delete task:', error)
+      }
+    }
+
+    const handleToggleTask = async (taskId: string, enabled: boolean) => {
+      try {
+        const response = await fetch(`/api/servers/${server.id}/tasks/${taskId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled })
+        })
+        
+        if (response.ok) {
+          loadScheduledTasks()
+        }
+      } catch (error) {
+        console.error('Failed to toggle task:', error)
+      }
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Manual Update */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-4">Manual Steam Update</h3>
+          
+          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+            <div>
+              <h4 className="font-medium">Update Game Server</h4>
+              <p className="text-sm text-gray-600">Download and install the latest game updates immediately</p>
+            </div>
+            <button
+              onClick={handleSteamUpdate}
+              disabled={isUpdating}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+            >
+              {isUpdating ? 'Updating...' : 'Update Now'}
+            </button>
+          </div>
+
+          {updateLogs.length > 0 && (
+            <div className="mt-4 bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm max-h-64 overflow-y-auto">
+              {updateLogs.map((log, index) => (
+                <div key={index}>{log}</div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Scheduled Tasks */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Scheduled Tasks</h3>
+            <button
+              onClick={() => setShowCreateTask(true)}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+            >
+              + Add Task
+            </button>
+          </div>
+
+          {scheduledTasks.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No scheduled tasks configured</p>
+              <p className="text-sm">Create a task to automate server updates</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {scheduledTasks.map((task) => (
+                <div key={task.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium">{task.name}</h4>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        task.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {task.enabled ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      {task.type.replace('_', ' ')} • {task.schedule}
+                    </p>
+                    {task.nextRun && (
+                      <p className="text-xs text-gray-500">
+                        Next run: {new Date(task.nextRun).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleToggleTask(task.id, !task.enabled)}
+                      className={`px-3 py-1 text-sm rounded ${
+                        task.enabled 
+                          ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' 
+                          : 'bg-green-100 text-green-800 hover:bg-green-200'
+                      }`}
+                    >
+                      {task.enabled ? 'Disable' : 'Enable'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTask(task.id)}
+                      className="px-3 py-1 text-sm bg-red-100 text-red-800 hover:bg-red-200 rounded"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Create Task Modal */}
+        {showCreateTask && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Create Scheduled Task</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
+                  <input
+                    type="text"
+                    value={newTask.name}
+                    onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., Daily Steam Update"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Task Type</label>
+                  <select
+                    value={newTask.type}
+                    onChange={(e) => setNewTask({ ...newTask, type: e.target.value, config: {} })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="STEAM_UPDATE">Steam Update</option>
+                    <option value="MAP_CHANGE">Map Change</option>
+                    <option value="SERVER_RESTART">Server Restart</option>
+                    <option value="CUSTOM_COMMAND">Custom Command</option>
+                  </select>
+                </div>
+
+                {/* Game-specific configuration */}
+                {newTask.type === 'MAP_CHANGE' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {server.game === 'CS2' ? 'Map' : server.game === 'RUST' ? 'World Settings' : 'Configuration'}
+                      </label>
+                      {server.game === 'CS2' && (
+                        <select
+                          value={newTask.config.map || ''}
+                          onChange={(e) => setNewTask({ 
+                            ...newTask, 
+                            config: { ...newTask.config, map: e.target.value }
+                          })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="de_dust2">de_dust2</option>
+                          <option value="de_mirage">de_mirage</option>
+                          <option value="de_inferno">de_inferno</option>
+                          <option value="de_overpass">de_overpass</option>
+                          <option value="de_vertigo">de_vertigo</option>
+                          <option value="de_ancient">de_ancient</option>
+                          <option value="de_nuke">de_nuke</option>
+                        </select>
+                      )}
+                      {server.game === 'RUST' && (
+                        <div className="space-y-2">
+                          <input
+                            type="number"
+                            placeholder="World Size (default: 4000)"
+                            value={newTask.config.worldSize || ''}
+                            onChange={(e) => setNewTask({ 
+                              ...newTask, 
+                              config: { ...newTask.config, worldSize: parseInt(e.target.value) || 4000 }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          <input
+                            type="text"
+                            placeholder="World Seed (optional)"
+                            value={newTask.config.seed || ''}
+                            onChange={(e) => setNewTask({ 
+                              ...newTask, 
+                              config: { ...newTask.config, seed: e.target.value }
+                            })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {newTask.type === 'CUSTOM_COMMAND' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Command</label>
+                    <input
+                      type="text"
+                      placeholder="Enter server command (e.g., say Hello World)"
+                      value={newTask.config.command || ''}
+                      onChange={(e) => setNewTask({ 
+                        ...newTask, 
+                        config: { ...newTask.config, command: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Examples: say Hello World, kick player_name, changelevel de_dust2
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Schedule (Cron)</label>
+                  <input
+                    type="text"
+                    value={newTask.schedule}
+                    onChange={(e) => setNewTask({ ...newTask, schedule: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="0 2 * * * (daily at 2 AM)"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Examples: 0 2 * * * (daily at 2 AM), 0 0 * * 0 (weekly on Sunday), 0 0 1 * * (monthly on 1st)
+                  </p>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="enabled"
+                    checked={newTask.enabled}
+                    onChange={(e) => setNewTask({ ...newTask, enabled: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="enabled" className="ml-2 block text-sm text-gray-700">
+                    Enable task immediately
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={() => setShowCreateTask(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateTask}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                >
+                  Create Task
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Only show Steam Updates tab for Steam-based games
+  const isSteamGame = server?.game === 'CS2' || server?.game === 'RUST'
+  
   const tabs = [
     { id: 'overview', name: 'Overview', icon: '📊' },
     { id: 'console', name: 'Web Console', icon: '💻' },
-    { id: 'updates', name: 'Steam Updates', icon: '🔄' },
+    ...(isSteamGame ? [{ id: 'updates', name: 'Steam Updates', icon: '🔄' }] : []),
     { id: 'tasks', name: 'Scheduled Tasks', icon: '⏰' },
     { id: 'settings', name: 'Settings', icon: '⚙️' }
   ]
@@ -516,31 +861,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         )}
 
         {activeTab === 'updates' && (
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Steam Updates</h3>
-            <div className="space-y-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-blue-900">Manual Update</h4>
-                <p className="text-sm text-blue-700 mb-3">
-                  Force update the server to the latest version. This will restart the server.
-                </p>
-                <button
-                  onClick={handleSteamUpdate}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                >
-                  Update Now
-                </button>
-              </div>
-              
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-medium text-gray-900">Auto-Update Settings</h4>
-                <p className="text-sm text-gray-600 mb-3">
-                  Configure automatic updates for this server.
-                </p>
-                <div className="text-sm text-gray-500">Feature coming soon!</div>
-              </div>
-            </div>
-          </div>
+          <SteamUpdatesTab server={server} />
         )}
 
         {activeTab === 'tasks' && (
