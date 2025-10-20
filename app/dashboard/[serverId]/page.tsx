@@ -667,6 +667,398 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
     )
   }
 
+  // Server Settings Tab Component
+  function ServerSettingsTab({ server, onServerUpdate }: { server: Server, onServerUpdate: () => void }) {
+    const [settings, setSettings] = useState({
+      name: server.name,
+      maxPlayers: server.maxPlayers,
+      allocatedRam: server.allocatedRam,
+      tickrate: server.tickrate || 128,
+      map: server.map || 'de_dust2',
+      gameMode: server.gameMode || 'competitive',
+      workshopMapId: server.workshopMapId || '',
+      steamAccount: server.steamAccount || '',
+      customArgs: server.customArgs || ''
+    })
+    const [isSaving, setIsSaving] = useState(false)
+    const [saveMessage, setSaveMessage] = useState('')
+
+    // CS2 Game Mode configurations with their command lines
+    const cs2GameModes = [
+      {
+        id: 'competitive',
+        name: 'Competitive',
+        description: '5v5 competitive matches',
+        commandLine: '+fox_competition_mode 1 +fox_competition_file "competition/match.json"'
+      },
+      {
+        id: 'casual',
+        name: 'Casual',
+        description: '10v10 casual matches',
+        commandLine: '+game_type 0 +game_mode 0'
+      },
+      {
+        id: 'wingman',
+        name: 'Wingman',
+        description: '2v2 competitive matches',
+        commandLine: '+game_type 0 +game_mode 2'
+      },
+      {
+        id: 'weapons_expert',
+        name: 'Weapons Expert',
+        description: 'No armor, only rifles and pistols',
+        commandLine: '+game_type 0 +game_mode 1 +sv_cheats 0'
+      },
+      {
+        id: 'arms_race',
+        name: 'Arms Race',
+        description: 'Progressive weapon elimination',
+        commandLine: '+game_type 1 +game_mode 0'
+      },
+      {
+        id: 'demolition',
+        name: 'Demolition',
+        description: 'Bomb defusal with progressive weapons',
+        commandLine: '+game_type 1 +game_mode 1'
+      },
+      {
+        id: 'deathmatch',
+        name: 'Deathmatch',
+        description: 'Free-for-all deathmatch',
+        commandLine: '+game_type 1 +game_mode 2'
+      },
+      {
+        id: 'custom',
+        name: 'Custom',
+        description: 'Custom game mode',
+        commandLine: '+game_type 0 +game_mode 0'
+      },
+      {
+        id: 'guardian',
+        name: 'Guardian',
+        description: 'Cooperative mission mode',
+        commandLine: '+game_type 1 +game_mode 3'
+      },
+      {
+        id: 'coop',
+        name: 'Co-op Strike',
+        description: 'Cooperative mission mode',
+        commandLine: '+game_type 1 +game_mode 4'
+      },
+      {
+        id: 'wargames',
+        name: 'Wargames',
+        description: 'Various mini-games',
+        commandLine: '+game_type 1 +game_mode 5'
+      },
+      {
+        id: 'dangerzone',
+        name: 'Danger Zone',
+        description: 'Battle royale mode',
+        commandLine: '+game_type 6 +game_mode 0'
+      }
+    ]
+
+    // Popular CS2 maps
+    const cs2Maps = [
+      'de_dust2', 'de_mirage', 'de_inferno', 'de_overpass', 'de_vertigo', 
+      'de_ancient', 'de_nuke', 'de_cache', 'de_cobblestone', 'de_train'
+    ]
+
+    const handleSave = async () => {
+      setIsSaving(true)
+      setSaveMessage('')
+      
+      try {
+        const response = await fetch(`/api/servers/${server.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(settings)
+        })
+
+        if (response.ok) {
+          setSaveMessage('Settings saved successfully!')
+          onServerUpdate()
+          setTimeout(() => setSaveMessage(''), 3000)
+        } else {
+          const error = await response.json()
+          setSaveMessage(`Error: ${error.error}`)
+        }
+      } catch (error) {
+        setSaveMessage(`Error: ${(error as Error).message}`)
+      } finally {
+        setIsSaving(false)
+      }
+    }
+
+    const generateStartupCommand = () => {
+      const selectedGameMode = cs2GameModes.find(mode => mode.id === settings.gameMode)
+      const baseCommand = `./game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon`
+      
+      const gameModeCommand = selectedGameMode ? selectedGameMode.commandLine : ''
+      const tickrateCommand = `+sv_tickrate ${settings.tickrate}`
+      const maxPlayersCommand = `+maxplayers ${settings.maxPlayers}`
+      const portCommand = `+port ${server.port}`
+      const rconCommand = `+rcon_port ${server.rconPort} +rcon_password ${server.rconPassword}`
+      
+      // Map selection - prioritize workshop map if specified
+      const mapCommand = settings.workshopMapId 
+        ? `+host_workshop_collection ${settings.workshopMapId}` 
+        : `+map ${settings.map}`
+      
+      // Steam account command
+      const steamAccountCommand = settings.steamAccount ? `+sv_setsteamaccount ${settings.steamAccount}` : ''
+      
+      // Custom arguments
+      const customArgsCommand = settings.customArgs || ''
+      
+      return [
+        baseCommand,
+        gameModeCommand,
+        tickrateCommand,
+        maxPlayersCommand,
+        portCommand,
+        rconCommand,
+        mapCommand,
+        steamAccountCommand,
+        customArgsCommand
+      ].filter(Boolean).join(' ')
+    }
+
+    if (server.game !== 'CS2') {
+      return (
+        <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+          <h3 className="text-lg font-medium text-white mb-4">Server Settings</h3>
+          <div className="text-center py-8 text-gray-400">
+            <p>Advanced startup settings are currently only available for CS2 servers.</p>
+            <p className="text-sm mt-2">Basic settings for {server.game} servers coming soon!</p>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Startup Configuration */}
+        <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+          <h3 className="text-lg font-medium text-white mb-4">Startup Configuration</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Basic Settings */}
+            <div className="space-y-4">
+              <h4 className="text-md font-medium text-gray-300">Basic Settings</h4>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Server Name</label>
+                <input
+                  type="text"
+                  value={settings.name}
+                  onChange={(e) => setSettings({ ...settings, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Max Players</label>
+                <input
+                  type="number"
+                  min="2"
+                  max="64"
+                  value={settings.maxPlayers}
+                  onChange={(e) => setSettings({ ...settings, maxPlayers: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Allocated RAM (MB)</label>
+                <input
+                  type="number"
+                  min="1024"
+                  max="16384"
+                  step="512"
+                  value={settings.allocatedRam}
+                  onChange={(e) => setSettings({ ...settings, allocatedRam: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Tickrate</label>
+                <select
+                  value={settings.tickrate}
+                  onChange={(e) => setSettings({ ...settings, tickrate: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value={64}>64 tick</option>
+                  <option value={128}>128 tick</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Map & Game Mode Settings */}
+            <div className="space-y-4">
+              <h4 className="text-md font-medium text-gray-300">Map & Game Mode</h4>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Map Selection</label>
+                <div className="space-y-3">
+                  <div>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="mapType"
+                        checked={!settings.workshopMapId}
+                        onChange={() => setSettings({ ...settings, workshopMapId: '' })}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-300">Official Map</span>
+                    </label>
+                    <select
+                      value={settings.map}
+                      onChange={(e) => setSettings({ ...settings, map: e.target.value })}
+                      disabled={!!settings.workshopMapId}
+                      className="w-full mt-2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                    >
+                      {cs2Maps.map(map => (
+                        <option key={map} value={map}>{map}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="mapType"
+                        checked={!!settings.workshopMapId}
+                        onChange={() => setSettings({ ...settings, workshopMapId: settings.workshopMapId || '123456789' })}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-300">Workshop Map</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter Workshop Collection ID"
+                      value={settings.workshopMapId}
+                      onChange={(e) => setSettings({ ...settings, workshopMapId: e.target.value })}
+                      disabled={!settings.workshopMapId}
+                      className="w-full mt-2 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      Get the ID from the Steam Workshop collection URL
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Game Mode</label>
+                <select
+                  value={settings.gameMode}
+                  onChange={(e) => setSettings({ ...settings, gameMode: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {cs2GameModes.map(mode => (
+                    <option key={mode.id} value={mode.id}>{mode.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">
+                  {cs2GameModes.find(mode => mode.id === settings.gameMode)?.description}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Steam Account Token</label>
+                <input
+                  type="text"
+                  placeholder="Optional - for server authentication"
+                  value={settings.steamAccount}
+                  onChange={(e) => setSettings({ ...settings, steamAccount: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Required for players to connect to your server. Get from Steam Game Server account.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Custom Arguments */}
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Custom Startup Arguments</label>
+            <textarea
+              value={settings.customArgs}
+              onChange={(e) => setSettings({ ...settings, customArgs: e.target.value })}
+              placeholder="Additional command line arguments..."
+              rows={3}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Advanced users only. Incorrect arguments may prevent server from starting.
+            </p>
+          </div>
+
+          {/* Generated Command Preview */}
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Generated Startup Command</label>
+            <div className="bg-gray-900 p-4 rounded-lg font-mono text-sm text-green-400 overflow-x-auto">
+              {generateStartupCommand()}
+            </div>
+            <p className="text-xs text-gray-400 mt-2">
+              This command will be used when starting your server
+            </p>
+          </div>
+
+          {/* Save Button */}
+          <div className="mt-6 flex justify-between items-center">
+            <div>
+              {saveMessage && (
+                <p className={`text-sm ${saveMessage.includes('Error') ? 'text-red-400' : 'text-green-400'}`}>
+                  {saveMessage}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
+            >
+              {isSaving ? 'Saving...' : 'Save Settings'}
+            </button>
+          </div>
+        </div>
+
+        {/* Danger Zone */}
+        <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+          <h3 className="text-lg font-medium text-white mb-4">Danger Zone</h3>
+          <div className="p-4 bg-red-50 rounded-lg">
+            <h4 className="font-medium text-red-900">Dangerous Actions</h4>
+            <p className="text-sm text-red-700 mb-4">
+              These actions are irreversible and will affect your server.
+            </p>
+            <div className="space-x-4">
+              <button
+                onClick={handleReinstall}
+                className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700"
+              >
+                Reinstall Server
+              </button>
+              <button
+                onClick={handleDelete}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+              >
+                Delete Server
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Only show Steam Updates tab for Steam-based games
   const isSteamGame = server?.game === 'CS2' || server?.game === 'RUST'
   
@@ -888,31 +1280,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         )}
 
         {activeTab === 'settings' && (
-          <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
-            <h3 className="text-lg font-medium text-white mb-4">Server Settings</h3>
-            <div className="space-y-6">
-              <div className="p-4 bg-red-50 rounded-lg">
-                <h4 className="font-medium text-red-900">Danger Zone</h4>
-                <p className="text-sm text-red-700 mb-4">
-                  These actions are irreversible and will affect your server.
-                </p>
-                <div className="space-x-4">
-                  <button
-                    onClick={handleReinstall}
-                    className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700"
-                  >
-                    Reinstall Server
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-                  >
-                    Delete Server
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ServerSettingsTab server={server} onServerUpdate={fetchServerDetails} />
         )}
       </div>
 

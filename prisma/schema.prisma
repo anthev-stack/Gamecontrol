@@ -1,7 +1,7 @@
 // This is your Prisma schema file
 datasource db {
   provider = "postgresql"
-  url      = env("STORAGE_DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -46,6 +46,8 @@ model Server {
   tickrate    Int?         // 64 or 128
   map         String?      // de_dust2, de_mirage, etc
   gameMode    String?      // competitive, casual, deathmatch
+  workshopMapId String?    // Workshop map ID for custom maps
+  steamAccount String?     // sv_setsteamaccount value for server authentication
   
   // Minecraft specific
   difficulty  String?      // peaceful, easy, normal, hard

@@ -72,6 +72,8 @@ export async function PATCH(
     if (body.tickrate !== undefined) updateData.tickrate = parseInt(body.tickrate)
     if (body.map !== undefined) updateData.map = body.map
     if (body.gameMode !== undefined) updateData.gameMode = body.gameMode
+    if (body.workshopMapId !== undefined) updateData.workshopMapId = body.workshopMapId
+    if (body.steamAccount !== undefined) updateData.steamAccount = body.steamAccount
 
     // Minecraft specific
     if (body.difficulty !== undefined) updateData.difficulty = body.difficulty

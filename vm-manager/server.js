@@ -85,6 +85,56 @@ function releasePort(port) {
   console.log(`🔓 Released port ${port}`)
 }
 
+// Generate CS2 startup command based on configuration
+function generateCS2StartupCommand(config, port, rconPort) {
+  const baseCommand = './game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon'
+  
+  // Game mode configuration
+  const gameModeCommands = {
+    'competitive': '+fox_competition_mode 1 +fox_competition_file "competition/match.json"',
+    'casual': '+game_type 0 +game_mode 0',
+    'wingman': '+game_type 0 +game_mode 2',
+    'weapons_expert': '+game_type 0 +game_mode 1 +sv_cheats 0',
+    'arms_race': '+game_type 1 +game_mode 0',
+    'demolition': '+game_type 1 +game_mode 1',
+    'deathmatch': '+game_type 1 +game_mode 2',
+    'custom': '+game_type 0 +game_mode 0',
+    'guardian': '+game_type 1 +game_mode 3',
+    'coop': '+game_type 1 +game_mode 4',
+    'wargames': '+game_type 1 +game_mode 5',
+    'dangerzone': '+game_type 6 +game_mode 0'
+  }
+  
+  const gameModeCommand = gameModeCommands[config.gameMode] || gameModeCommands['competitive']
+  const tickrateCommand = `+sv_tickrate ${config.tickrate || 128}`
+  const maxPlayersCommand = `+maxplayers ${config.maxPlayers || 10}`
+  const portCommand = `+port ${port}`
+  const rconCommand = `+rcon_port ${rconPort} +rcon_password ${config.rconPassword || 'changeme'}`
+  
+  // Map selection - prioritize workshop map if specified
+  const mapCommand = config.workshopMapId 
+    ? `+host_workshop_collection ${config.workshopMapId}` 
+    : `+map ${config.map || 'de_dust2'}`
+  
+  // Steam account command
+  const steamAccountCommand = config.steamAccount ? `+sv_setsteamaccount ${config.steamAccount}` : ''
+  
+  // Custom arguments
+  const customArgsCommand = config.customArgs || ''
+  
+  return [
+    baseCommand,
+    gameModeCommand,
+    tickrateCommand,
+    maxPlayersCommand,
+    portCommand,
+    rconCommand,
+    mapCommand,
+    steamAccountCommand,
+    customArgsCommand
+  ].filter(Boolean).join(' ')
+}
+
 // Health check endpoint (no auth required)
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() })
@@ -133,7 +183,7 @@ app.post('/api/servers', authenticate, async (req, res) => {
         ],
         Cmd: [
           'bash', '-c',
-          'steamcmd +login anonymous +app_update 730 +quit && cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server && ./game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon +game_type 0 +game_mode 1 +map de_dust2 +maxplayers 10 +port 27015 +rcon_port 27115 +rcon_password changeme'
+          `steamcmd +login anonymous +app_update 730 +quit && cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server && ${generateCS2StartupCommand(config, port, rconPort)}`
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},

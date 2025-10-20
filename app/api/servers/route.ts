@@ -78,6 +78,8 @@ export async function POST(request: NextRequest) {
       serverData.tickrate = gameSpecificFields.tickrate ? parseInt(gameSpecificFields.tickrate) : 128
       serverData.map = gameSpecificFields.map || 'de_dust2'
       serverData.gameMode = gameSpecificFields.gameMode || 'competitive'
+      serverData.workshopMapId = gameSpecificFields.workshopMapId || null
+      serverData.steamAccount = gameSpecificFields.steamAccount || null
     } else if (game === 'MINECRAFT') {
       serverData.difficulty = gameSpecificFields.difficulty || 'normal'
       serverData.worldType = gameSpecificFields.worldType || 'default'

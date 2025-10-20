@@ -21,6 +21,8 @@ export default function ServerModal({ server, onClose }: ServerModalProps) {
     tickrate: '128',
     map: 'de_dust2',
     gameMode: 'competitive',
+    workshopMapId: '',
+    steamAccount: '',
     
     // Minecraft specific
     difficulty: 'normal',
@@ -113,6 +115,8 @@ export default function ServerModal({ server, onClose }: ServerModalProps) {
         payload.tickrate = parseInt(formData.tickrate)
         payload.map = formData.map
         payload.gameMode = formData.gameMode
+        payload.workshopMapId = formData.workshopMapId
+        payload.steamAccount = formData.steamAccount
       } else if (formData.game === 'MINECRAFT') {
         payload.difficulty = formData.difficulty
         payload.worldType = formData.worldType
@@ -343,8 +347,16 @@ export default function ServerModal({ server, onClose }: ServerModalProps) {
                       >
                         <option value="competitive">Competitive</option>
                         <option value="casual">Casual</option>
-                        <option value="deathmatch">Deathmatch</option>
                         <option value="wingman">Wingman</option>
+                        <option value="weapons_expert">Weapons Expert</option>
+                        <option value="arms_race">Arms Race</option>
+                        <option value="demolition">Demolition</option>
+                        <option value="deathmatch">Deathmatch</option>
+                        <option value="custom">Custom</option>
+                        <option value="guardian">Guardian</option>
+                        <option value="coop">Co-op Strike</option>
+                        <option value="wargames">Wargames</option>
+                        <option value="dangerzone">Danger Zone</option>
                       </select>
                     </div>
 
@@ -360,6 +372,38 @@ export default function ServerModal({ server, onClose }: ServerModalProps) {
                         <option value="64">64 tick</option>
                         <option value="128">128 tick</option>
                       </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Workshop Map ID (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Enter Workshop Collection ID"
+                        value={formData.workshopMapId}
+                        onChange={(e) => setFormData({ ...formData, workshopMapId: e.target.value })}
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Get the ID from the Steam Workshop collection URL
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Steam Account Token (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="For server authentication"
+                        value={formData.steamAccount}
+                        onChange={(e) => setFormData({ ...formData, steamAccount: e.target.value })}
+                        className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Required for players to connect. Get from Steam Game Server account.
+                      </p>
                     </div>
                   </div>
                 </div>
