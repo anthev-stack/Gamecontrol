@@ -134,8 +134,48 @@ export async function linkServerToFTP(containerId, username, serverName, serverH
     // Create directory if it doesn't exist
     await execAsync(`sudo mkdir -p ${userServerDir}`)
     
-    // Copy files instead of creating symlink
-    await execAsync(`sudo cp -r ${volumePath}/* ${userServerDir}/`)
+    // Try multiple approaches to get the server files
+    let sourcePath = volumePath
+    
+    // First, try to get the container's working directory
+    try {
+      const { stdout: workDir } = await execAsync(`docker inspect ${containerId} --format '{{.Config.WorkingDir}}'`)
+      if (workDir && workDir.trim() && workDir.trim() !== '/') {
+        sourcePath = workDir.trim()
+      }
+    } catch (error) {
+      console.log('Could not get working directory, using volume path')
+    }
+    
+    // If volume path doesn't exist or is empty, try to find files in the container
+    try {
+      const { stdout: fileCheck } = await execAsync(`ls -la ${sourcePath} 2>/dev/null | wc -l`)
+      if (parseInt(fileCheck.trim()) <= 2) {
+        // Volume path is empty, try to find files in container
+        const { stdout: containerFiles } = await execAsync(`docker exec ${containerId} find / -name "*.jar" -o -name "server.properties" -o -name "eula.txt" 2>/dev/null | head -5`)
+        if (containerFiles.trim()) {
+          // Found files in container, get the directory
+          const filePath = containerFiles.trim().split('\n')[0]
+          sourcePath = filePath.substring(0, filePath.lastIndexOf('/'))
+        }
+      }
+    } catch (error) {
+      console.log('Could not check container files')
+    }
+    
+    // Copy files from the source
+    await execAsync(`sudo cp -r ${sourcePath}/* ${userServerDir}/ 2>/dev/null || true`)
+    
+    // Also try to copy from container directly if volume copy failed
+    try {
+      const { stdout: fileCount } = await execAsync(`ls -la ${userServerDir} | wc -l`)
+      if (parseInt(fileCount.trim()) <= 2) {
+        console.log('Volume copy failed, trying direct container copy...')
+        await execAsync(`docker cp ${containerId}:/ ${userServerDir}/`)
+      }
+    } catch (error) {
+      console.log('Container copy also failed')
+    }
     
     // Set permissions
     await execAsync(`sudo chown -R ${username}:${username} ${userServerDir}`)
