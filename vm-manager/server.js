@@ -445,6 +445,120 @@ app.get('/api/containers', authenticate, async (req, res) => {
   }
 })
 
+// Get server logs
+app.get('/api/servers/:containerId/logs', authenticate, async (req, res) => {
+  try {
+    const container = docker.getContainer(req.params.containerId)
+    const { tail = 100, follow = false } = req.query
+    
+    const logs = await container.logs({
+      stdout: true,
+      stderr: true,
+      timestamps: true,
+      tail: parseInt(tail),
+      follow: follow === 'true'
+    })
+    
+    res.json({
+      logs: logs.toString(),
+      containerId: req.params.containerId
+    })
+  } catch (error) {
+    console.error('❌ Error getting server logs:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Send command to server
+app.post('/api/servers/:containerId/command', authenticate, async (req, res) => {
+  try {
+    const { command } = req.body
+    const container = docker.getContainer(req.params.containerId)
+    
+    if (!command) {
+      return res.status(400).json({ error: 'Command is required' })
+    }
+    
+    // Execute command in container
+    const exec = await container.exec({
+      Cmd: ['bash', '-c', command],
+      AttachStdout: true,
+      AttachStderr: true
+    })
+    
+    const stream = await exec.start()
+    let output = ''
+    
+    stream.on('data', (chunk) => {
+      output += chunk.toString()
+    })
+    
+    stream.on('end', () => {
+      res.json({
+        output: output,
+        command: command,
+        containerId: req.params.containerId
+      })
+    })
+    
+    stream.on('error', (error) => {
+      console.error('❌ Error executing command:', error)
+      res.status(500).json({ error: error.message })
+    })
+  } catch (error) {
+    console.error('❌ Error sending command:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Get server console stream (WebSocket-like for real-time logs)
+app.get('/api/servers/:containerId/console', authenticate, async (req, res) => {
+  try {
+    const container = docker.getContainer(req.params.containerId)
+    
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Cache-Control'
+    })
+    
+    // Send initial connection message
+    res.write('data: {"type":"connected","message":"Console connected"}\n\n')
+    
+    // Get logs stream
+    const logs = await container.logs({
+      stdout: true,
+      stderr: true,
+      timestamps: true,
+      follow: true,
+      tail: 50
+    })
+    
+    logs.on('data', (chunk) => {
+      const logLine = chunk.toString().trim()
+      if (logLine) {
+        res.write(`data: {"type":"log","message":"${logLine.replace(/"/g, '\\"')}"}\n\n`)
+      }
+    })
+    
+    logs.on('error', (error) => {
+      console.error('❌ Error in log stream:', error)
+      res.write(`data: {"type":"error","message":"${error.message}"}\n\n`)
+    })
+    
+    // Handle client disconnect
+    req.on('close', () => {
+      logs.destroy()
+    })
+    
+  } catch (error) {
+    console.error('❌ Error setting up console stream:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // ═══════════════════════════════════════════════════
 // FTP Management Endpoints
 // ═══════════════════════════════════════════════════

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Server } from '@prisma/client'
 
@@ -20,6 +20,172 @@ interface ServerDetailPageProps {
   params: {
     serverId: string
   }
+}
+
+// Console Tab Component
+function ConsoleTab({ server }: { server: Server }) {
+  const [logs, setLogs] = useState<string[]>([])
+  const [command, setCommand] = useState('')
+  const [isConnected, setIsConnected] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const logsEndRef = useRef<HTMLDivElement>(null)
+  const eventSourceRef = useRef<EventSource | null>(null)
+
+  const scrollToBottom = () => {
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [logs])
+
+  useEffect(() => {
+    if (!server.containerId) return
+
+    // Load initial logs
+    loadLogs()
+
+    // Set up real-time console stream
+    const eventSource = new EventSource(`/api/servers/${server.id}/console/stream`)
+    eventSourceRef.current = eventSource
+
+    eventSource.onopen = () => {
+      setIsConnected(true)
+    }
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data.type === 'log') {
+          setLogs(prev => [...prev, data.message])
+        } else if (data.type === 'connected') {
+          console.log('Console connected')
+        } else if (data.type === 'error') {
+          console.error('Console error:', data.message)
+        }
+      } catch (error) {
+        console.error('Error parsing console data:', error)
+      }
+    }
+
+    eventSource.onerror = (error) => {
+      console.error('Console stream error:', error)
+      setIsConnected(false)
+    }
+
+    return () => {
+      eventSource.close()
+      eventSourceRef.current = null
+    }
+  }, [server.containerId, server.id])
+
+  const loadLogs = async () => {
+    try {
+      const response = await fetch(`/api/servers/${server.id}/console/logs?tail=100`)
+      if (response.ok) {
+        const data = await response.json()
+        setLogs(data.logs.split('\n').filter((line: string) => line.trim()))
+      }
+    } catch (error) {
+      console.error('Error loading logs:', error)
+    }
+  }
+
+  const sendCommand = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!command.trim() || !server.containerId) return
+
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/servers/${server.id}/console/command`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ command: command.trim() })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setLogs(prev => [...prev, `$ ${command}`, data.output])
+        setCommand('')
+      } else {
+        const error = await response.json()
+        setLogs(prev => [...prev, `$ ${command}`, `Error: ${error.error}`])
+      }
+    } catch (error) {
+      setLogs(prev => [...prev, `$ ${command}`, `Error: ${error}`])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const clearLogs = () => {
+    setLogs([])
+  }
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium text-gray-900">Web Console</h3>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className="text-sm text-gray-600">
+              {isConnected ? 'Connected' : 'Disconnected'}
+            </span>
+          </div>
+          <button
+            onClick={clearLogs}
+            className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-black text-green-400 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto mb-4">
+        {logs.length === 0 ? (
+          <div className="text-gray-500">Loading console output...</div>
+        ) : (
+          logs.map((log, index) => (
+            <div key={index} className="mb-1">
+              {log}
+            </div>
+          ))
+        )}
+        <div ref={logsEndRef} />
+      </div>
+
+      <form onSubmit={sendCommand} className="flex gap-2">
+        <input
+          type="text"
+          value={command}
+          onChange={(e) => setCommand(e.target.value)}
+          placeholder="Enter command..."
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          disabled={!server.containerId || isLoading}
+        />
+        <button
+          type="submit"
+          disabled={!command.trim() || !server.containerId || isLoading}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? 'Sending...' : 'Send'}
+        </button>
+      </form>
+
+      <div className="mt-2 text-xs text-gray-500">
+        <p>💡 <strong>Tips:</strong></p>
+        <ul className="list-disc list-inside ml-4 space-y-1">
+          <li>Use <code className="bg-gray-100 px-1 rounded">status</code> to check server status</li>
+          <li>Use <code className="bg-gray-100 px-1 rounded">ls -la</code> to list files</li>
+          <li>Use <code className="bg-gray-100 px-1 rounded">ps aux</code> to see running processes</li>
+          <li>For CS2: Use <code className="bg-gray-100 px-1 rounded">./game/bin/linuxsteamrt64/cs2 -help</code></li>
+        </ul>
+      </div>
+    </div>
+  )
 }
 
 export default function ServerDetailPage({ params }: ServerDetailPageProps) {
@@ -346,13 +512,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         )}
 
         {activeTab === 'console' && (
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Web Console</h3>
-            <div className="bg-black text-green-400 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto">
-              <div className="text-gray-500">Console output will appear here...</div>
-              <div className="text-gray-500">Feature coming soon!</div>
-            </div>
-          </div>
+          <ConsoleTab server={server} />
         )}
 
         {activeTab === 'updates' && (
