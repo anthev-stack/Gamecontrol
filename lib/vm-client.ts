@@ -3,6 +3,25 @@
 const VM_API_URL = process.env.VM_API_URL
 const VM_API_KEY = process.env.VM_API_KEY
 
+// Validate VM configuration
+function validateVMConfig() {
+  if (!VM_API_URL || !VM_API_KEY) {
+    return { valid: false, error: 'VM not configured' }
+  }
+  
+  // Check if VM_API_URL uses correct protocol
+  if (VM_API_URL.startsWith('https://')) {
+    console.warn('⚠️ VM_API_URL uses HTTPS but VM Manager runs on HTTP')
+    console.warn('   Consider using: http://YOUR-VPS-IP:3001')
+  }
+  
+  if (!VM_API_URL.startsWith('http://') && !VM_API_URL.startsWith('https://')) {
+    return { valid: false, error: 'VM_API_URL must start with http:// or https://' }
+  }
+  
+  return { valid: true }
+}
+
 interface VMResponse {
   containerId?: string
   containerName?: string
@@ -23,10 +42,11 @@ export async function createServerOnVM(
   config: any,
   serverId: string
 ): Promise<VMResponse> {
-  if (!VM_API_URL || !VM_API_KEY) {
-    console.warn('⚠️ VM not configured - server created in database only')
+  const validation = validateVMConfig()
+  if (!validation.valid) {
+    console.warn(`⚠️ ${validation.error} - server created in database only`)
     return {
-      error: 'VM not configured',
+      error: validation.error,
       status: 'pending'
     }
   }
@@ -45,7 +65,9 @@ export async function createServerOnVM(
         name,
         config,
         serverId
-      })
+      }),
+      // Add timeout and handle SSL issues
+      signal: AbortSignal.timeout(30000) // 30 second timeout
     })
 
     if (!response.ok) {
@@ -58,6 +80,18 @@ export async function createServerOnVM(
     return data
   } catch (error: any) {
     console.error('❌ Error creating server on VM:', error)
+    
+    // Handle specific SSL/TLS errors
+    if (error.message?.includes('SSL') || error.message?.includes('TLS') || error.cause?.code === 'ERR_SSL_PACKET_LENGTH_TOO_LONG') {
+      console.error('🔒 SSL/TLS Error detected. Check VM_API_URL protocol:')
+      console.error(`   Current VM_API_URL: ${VM_API_URL}`)
+      console.error('   Expected: http://YOUR-VPS-IP:3001 (not https://)')
+      return {
+        error: 'SSL/TLS connection error. Check VM_API_URL uses http:// not https://',
+        status: 'error'
+      }
+    }
+    
     return {
       error: error.message,
       status: 'error'
