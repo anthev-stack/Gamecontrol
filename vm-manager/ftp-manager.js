@@ -115,11 +115,13 @@ export async function changeFTPPassword(username, newPassword) {
 /**
  * Link server files to FTP directory
  */
-export async function linkServerToFTP(containerId, username, serverName) {
+export async function linkServerToFTP(containerId, username, serverName, serverHost, serverPort) {
   try {
     console.log(`🔗 Linking server ${serverName} to FTP for ${username}`)
     
-    const userServerDir = path.join(FTP_BASE_DIR, username, 'servers', serverName)
+    // Create folder name using IP_PORT format
+    const folderName = `${serverHost}_${serverPort}`
+    const userServerDir = path.join(FTP_BASE_DIR, username, 'servers', folderName)
     
     // Get container volume path
     const { stdout } = await execAsync(`docker inspect ${containerId} --format '{{range .Mounts}}{{.Source}}:{{end}}'`)
@@ -129,16 +131,20 @@ export async function linkServerToFTP(containerId, username, serverName) {
       throw new Error('Could not find container volume path')
     }
     
-    // Create symlink
-    await execAsync(`sudo ln -sf ${volumePath} ${userServerDir}`)
+    // Create directory if it doesn't exist
+    await execAsync(`sudo mkdir -p ${userServerDir}`)
+    
+    // Copy files instead of creating symlink
+    await execAsync(`sudo cp -r ${volumePath}/* ${userServerDir}/`)
     
     // Set permissions
     await execAsync(`sudo chown -R ${username}:${username} ${userServerDir}`)
+    await execAsync(`sudo chmod -R 755 ${userServerDir}`)
     
     console.log(`✅ Server linked: ${serverName} -> ${userServerDir}`)
     
     return {
-      ftpPath: `servers/${serverName}`,
+      ftpPath: `servers/${folderName}`,
       fullPath: userServerDir
     }
   } catch (error) {

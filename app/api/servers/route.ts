@@ -124,7 +124,9 @@ export async function POST(request: NextRequest) {
             body: JSON.stringify({
               containerId: vmResult.containerId,
               userId: session.user.id,
-              serverName: name.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase()
+              serverName: name.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase(),
+              serverHost: vmResult.host,
+              serverPort: vmResult.port
             })
           })
           

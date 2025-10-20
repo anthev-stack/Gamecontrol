@@ -52,7 +52,9 @@ export async function POST(
         body: JSON.stringify({
           containerId: server.containerId,
           userId: session.user.id,
-          serverName: server.name.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase()
+          serverName: server.name.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase(),
+          serverHost: server.host,
+          serverPort: server.port
         })
       })
       

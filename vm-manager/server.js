@@ -664,14 +664,28 @@ app.delete('/api/ftp/users/:userId', authenticate, async (req, res) => {
 // Link server to FTP
 app.post('/api/ftp/link', authenticate, async (req, res) => {
   try {
-    const { containerId, userId, serverName } = req.body
+    const { containerId, userId, serverName, serverHost, serverPort } = req.body
     
     if (!containerId || !userId || !serverName) {
       return res.status(400).json({ error: 'containerId, userId, and serverName are required' })
     }
     
+    // Get server host and port from container if not provided
+    let host = serverHost || VM_HOST
+    let port = serverPort
+    
+    if (!port) {
+      // Try to get port from container inspection
+      try {
+        const { stdout } = await execAsync(`docker inspect ${containerId} --format '{{range $p, $conf := .NetworkSettings.Ports}}{{if $conf}}{{range $conf}}{{.HostPort}}{{end}}{{end}}'`)
+        port = stdout.trim().split('\n')[0] || '25565'
+      } catch (error) {
+        port = '25565' // Default port
+      }
+    }
+    
     const username = generateFTPUsername(userId)
-    const result = await linkServerToFTP(containerId, username, serverName)
+    const result = await linkServerToFTP(containerId, username, serverName, host, port)
     
     res.json({
       message: 'Server linked to FTP successfully',
