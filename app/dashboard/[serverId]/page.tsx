@@ -335,7 +335,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
       type: 'STEAM_UPDATE',
       schedule: '',
       enabled: true,
-      config: {}
+      config: {} as any
     })
 
     // Load scheduled tasks
