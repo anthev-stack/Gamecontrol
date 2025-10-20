@@ -16,12 +16,11 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get all user's servers that have containerId but no ftpPath
+    // Get all user's servers that have containerId
     const servers = await prisma.server.findMany({
       where: {
         userId: session.user.id,
-        containerId: { not: null },
-        ftpPath: null
+        containerId: { not: null }
       }
     })
 

@@ -134,47 +134,44 @@ export async function linkServerToFTP(containerId, username, serverName, serverH
     // Create directory if it doesn't exist
     await execAsync(`sudo mkdir -p ${userServerDir}`)
     
-    // Try multiple approaches to get the server files
-    let sourcePath = volumePath
-    
-    // First, try to get the container's working directory
+    // Try to copy files directly from the running container
     try {
-      const { stdout: workDir } = await execAsync(`docker inspect ${containerId} --format '{{.Config.WorkingDir}}'`)
-      if (workDir && workDir.trim() && workDir.trim() !== '/') {
-        sourcePath = workDir.trim()
-      }
-    } catch (error) {
-      console.log('Could not get working directory, using volume path')
-    }
-    
-    // If volume path doesn't exist or is empty, try to find files in the container
-    try {
-      const { stdout: fileCheck } = await execAsync(`ls -la ${sourcePath} 2>/dev/null | wc -l`)
-      if (parseInt(fileCheck.trim()) <= 2) {
-        // Volume path is empty, try to find files in container
-        const { stdout: containerFiles } = await execAsync(`docker exec ${containerId} find / -name "*.jar" -o -name "server.properties" -o -name "eula.txt" 2>/dev/null | head -5`)
-        if (containerFiles.trim()) {
-          // Found files in container, get the directory
-          const filePath = containerFiles.trim().split('\n')[0]
-          sourcePath = filePath.substring(0, filePath.lastIndexOf('/'))
-        }
-      }
-    } catch (error) {
-      console.log('Could not check container files')
-    }
-    
-    // Copy files from the source
-    await execAsync(`sudo cp -r ${sourcePath}/* ${userServerDir}/ 2>/dev/null || true`)
-    
-    // Also try to copy from container directly if volume copy failed
-    try {
+      console.log(`📁 Copying files from container ${containerId}...`)
+      
+      // First, try to copy the entire container filesystem
+      await execAsync(`docker cp ${containerId}:/ ${userServerDir}/`)
+      
+      // Check if we got files
       const { stdout: fileCount } = await execAsync(`ls -la ${userServerDir} | wc -l`)
       if (parseInt(fileCount.trim()) <= 2) {
-        console.log('Volume copy failed, trying direct container copy...')
-        await execAsync(`docker cp ${containerId}:/ ${userServerDir}/`)
+        console.log('Container copy failed, trying volume path...')
+        
+        // Fallback to volume path
+        if (volumePath && volumePath !== '') {
+          await execAsync(`sudo cp -r ${volumePath}/* ${userServerDir}/ 2>/dev/null || true`)
+        }
       }
+      
+      // If still no files, try to find where the server files are
+      const { stdout: finalFileCount } = await execAsync(`ls -la ${userServerDir} | wc -l`)
+      if (parseInt(finalFileCount.trim()) <= 2) {
+        console.log('No files found, creating a placeholder directory...')
+        
+        // Create some basic files for the server type
+        if (serverName.toLowerCase().includes('minecraft')) {
+          await execAsync(`echo "eula=true" | sudo tee ${userServerDir}/eula.txt`)
+          await execAsync(`echo "server-port=${serverPort}" | sudo tee ${userServerDir}/server.properties`)
+        } else if (serverName.toLowerCase().includes('cs2')) {
+          await execAsync(`echo "// CS2 Server Config" | sudo tee ${userServerDir}/server.cfg`)
+        }
+      }
+      
     } catch (error) {
-      console.log('Container copy also failed')
+      console.error('Error copying container files:', error)
+      
+      // Create a basic directory structure
+      await execAsync(`sudo mkdir -p ${userServerDir}`)
+      await execAsync(`echo "Server files will appear here when the server starts" | sudo tee ${userServerDir}/README.txt`)
     }
     
     // Set permissions
