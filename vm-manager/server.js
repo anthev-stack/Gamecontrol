@@ -126,33 +126,14 @@ app.post('/api/servers', authenticate, async (req, res) => {
     
     if (gameType === 'CS2') {
       containerConfig = {
-        Image: 'joedwards32/cs2:latest',
+        Image: 'steamcmd/steamcmd:ubuntu-18',
         name: containerName,
         Env: [
-          `PORT=${port}`,
-          `RCON_PORT=${rconPort}`,
-          `RCON_PASSWORD=${config.rconPassword || 'changeme'}`,
-          `TICKRATE=${config.tickrate || 128}`,
-          `MAXPLAYERS=${config.maxPlayers || 10}`,
-          `STARTMAP=${config.map || 'de_dust2'}`,
-          `GAMEMODE=${config.gameMode || 'competitive'}`,
-          `HOSTNAME=${name}`,
-          'CS2_SERVERNAME=GameControl Server',
-          'CS2_CHEATS=0',
-          'CS2_SERVER_HIBERNATE=0',
-          'CS2_RCON_PORT=${rconPort}',
-          'CS2_LAN=0',
-          'CS2_RCONPW=${config.rconPassword || "changeme"}',
-          'CS2_PW=""',
-          'CS2_MAXPLAYERS=${config.maxPlayers || 10}',
-          'CS2_ADDITIONAL_ARGS=""',
-          'CS2_CFG_URL=""',
-          // Auto-update settings
-          'STEAMCMD_VALIDATE=1',  // Validates files on each start
-          'CS2_GAMETYPE=0',
-          'CS2_GAMEMODE=1',
-          'CS2_MAPGROUP=mg_active',
-          'CS2_STARTMAP=${config.map || "de_dust2"}'
+          'STEAMCMD_VALIDATE=1'
+        ],
+        Cmd: [
+          'bash', '-c',
+          'steamcmd +login anonymous +app_update 730 +quit && cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server && ./game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon +game_type 0 +game_mode 1 +map de_dust2 +maxplayers 10 +port 27015 +rcon_port 27115 +rcon_password changeme'
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},
