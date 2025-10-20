@@ -256,3 +256,92 @@ export async function getVMStatus(): Promise<VMResponse> {
   }
 }
 
+/**
+ * Get server stats from VM
+ */
+export async function getServerStatsFromVM(containerId: string): Promise<any> {
+  if (!VM_API_URL || !VM_API_KEY) {
+    return {
+      status: 'offline',
+      playerCount: 0,
+      maxPlayers: 10,
+      cpuUsage: 0,
+      memoryUsed: 0,
+      memoryTotal: 0,
+      bandwidthIn: 0,
+      bandwidthOut: 0,
+      uptime: 'Not running'
+    }
+  }
+
+  try {
+    const response = await fetch(`${VM_API_URL}/api/servers/${containerId}/stats`, {
+      headers: {
+        'x-api-key': VM_API_KEY || ''
+      }
+    })
+
+    if (!response.ok) {
+      return {
+        status: 'offline',
+        playerCount: 0,
+        maxPlayers: 10,
+        cpuUsage: 0,
+        memoryUsed: 0,
+        memoryTotal: 0,
+        bandwidthIn: 0,
+        bandwidthOut: 0,
+        uptime: 'Not running'
+      }
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching server stats:', error)
+    return {
+      status: 'error',
+      playerCount: 0,
+      maxPlayers: 10,
+      cpuUsage: 0,
+      memoryUsed: 0,
+      memoryTotal: 0,
+      bandwidthIn: 0,
+      bandwidthOut: 0,
+      uptime: 'Error'
+    }
+  }
+}
+
+/**
+ * Update server (Steam update)
+ */
+export async function updateServerOnVM(containerId: string): Promise<VMResponse> {
+  if (!VM_API_URL || !VM_API_KEY) {
+    return { error: 'VM not configured' }
+  }
+
+  try {
+    console.log(`🔄 Updating container ${containerId}...`)
+    
+    const response = await fetch(`${VM_API_URL}/api/servers/${containerId}/update`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': VM_API_KEY || ''
+      }
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to update server')
+    }
+
+    const data = await response.json()
+    console.log('✅ Server updated')
+    return data
+  } catch (error: any) {
+    console.error('❌ Error updating server:', error)
+    return { error: error.message }
+  }
+}
+

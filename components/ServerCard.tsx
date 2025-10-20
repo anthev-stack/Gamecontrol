@@ -2,6 +2,7 @@
 
 import { Server, GameType, ServerStatus } from '@prisma/client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { formatRam } from '@/lib/ram-calculator'
 
 interface ServerCardProps {
@@ -13,6 +14,7 @@ interface ServerCardProps {
 
 export default function ServerCard({ server, onEdit, onDelete, onRefresh }: ServerCardProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const gameIcons: Record<GameType, string> = {
     CS2: '🎯',
@@ -213,10 +215,10 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
 
         <div className="flex gap-2 pt-3 border-t border-gray-700">
           <button
-            onClick={() => onEdit(server)}
-            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            onClick={() => router.push(`/dashboard/${server.id}`)}
+            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
-            Edit
+            Configuration
           </button>
           <button
             onClick={() => onDelete(server.id)}

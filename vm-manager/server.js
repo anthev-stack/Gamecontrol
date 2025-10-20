@@ -352,6 +352,48 @@ app.get('/api/servers/:containerId', authenticate, async (req, res) => {
   }
 })
 
+// Get server stats
+app.get('/api/servers/:containerId/stats', authenticate, async (req, res) => {
+  try {
+    const container = docker.getContainer(req.params.containerId)
+    const info = await container.inspect()
+    
+    // Get container stats
+    const stats = await container.stats({ stream: false })
+    
+    // Calculate CPU usage
+    const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage
+    const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage
+    const cpuUsage = systemDelta > 0 ? (cpuDelta / systemDelta) * 100 : 0
+    
+    // Calculate memory usage
+    const memoryUsage = stats.memory_stats.usage || 0
+    const memoryLimit = stats.memory_stats.limit || info.HostConfig.Memory || 0
+    
+    // Calculate uptime
+    const uptime = info.State.Running ? 
+      Math.floor((Date.now() - new Date(info.State.StartedAt).getTime()) / 1000) : 0
+    
+    const uptimeString = uptime > 0 ? 
+      `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m` : 'Not running'
+    
+    res.json({
+      status: info.State.Running ? 'online' : 'offline',
+      playerCount: 0, // TODO: Implement game-specific player counting
+      maxPlayers: 10, // TODO: Get from server config
+      cpuUsage: Math.round(cpuUsage * 100) / 100,
+      memoryUsed: memoryUsage,
+      memoryTotal: memoryLimit,
+      bandwidthIn: 0, // TODO: Implement bandwidth tracking
+      bandwidthOut: 0, // TODO: Implement bandwidth tracking
+      uptime: uptimeString
+    })
+  } catch (error) {
+    console.error('❌ Error getting server stats:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // Delete server
 app.delete('/api/servers/:containerId', authenticate, async (req, res) => {
   try {
