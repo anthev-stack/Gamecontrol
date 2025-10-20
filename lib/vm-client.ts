@@ -58,7 +58,7 @@ export async function createServerOnVM(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': VM_API_KEY
+        'x-api-key': VM_API_KEY || ''
       },
       body: JSON.stringify({
         gameType,
@@ -114,7 +114,7 @@ export async function startServerOnVM(containerId: string): Promise<VMResponse> 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': VM_API_KEY
+        'x-api-key': VM_API_KEY || ''
       }
     })
 
@@ -147,7 +147,7 @@ export async function stopServerOnVM(containerId: string): Promise<VMResponse> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': VM_API_KEY
+        'x-api-key': VM_API_KEY || ''
       }
     })
 
@@ -180,7 +180,7 @@ export async function restartServerOnVM(containerId: string): Promise<VMResponse
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': VM_API_KEY
+        'x-api-key': VM_API_KEY || ''
       }
     })
 
@@ -213,7 +213,7 @@ export async function deleteServerFromVM(containerId: string): Promise<VMRespons
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': VM_API_KEY
+        'x-api-key': VM_API_KEY || ''
       }
     })
 
@@ -242,7 +242,7 @@ export async function getVMStatus(): Promise<VMResponse> {
   try {
     const response = await fetch(`${VM_API_URL}/api/status`, {
       headers: {
-        'x-api-key': VM_API_KEY
+        'x-api-key': VM_API_KEY || ''
       }
     })
 
