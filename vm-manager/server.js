@@ -177,39 +177,18 @@ app.post('/api/servers', authenticate, async (req, res) => {
     let containerConfig = {}
     
     if (gameType === 'CS2') {
+      // First stage: Download CS2 with steamcmd
       containerConfig = {
         Image: 'steamcmd/steamcmd:latest',
         name: containerName,
-        Env: [
-          'SRCDS_TOKEN=' + (config.steamAccount || ''),
-          'SRCDS_RCON_PASSWORD=' + (config.rconPassword || 'changeme'),
-          'SRCDS_PW=' + (config.serverPassword || ''),
-          'SRCDS_HOSTNAME=' + (name || 'CS2 Server'),
-          'SRCDS_MAXPLAYERS=' + (config.maxPlayers || 10),
-          'SRCDS_STARTMAP=' + (config.map || 'de_dust2'),
-          'SRCDS_GAMEMODE=' + (config.gameMode || 'competitive'),
-          'SRCDS_TICKRATE=' + (config.tickrate || 128),
-          'SRCDS_WORKSHOP_COLLECTION=' + (config.workshopMapId || ''),
-          'SRCDS_ADDITIONAL_ARGS=' + (config.customArgs || '')
-        ],
         Cmd: [
           'bash', '-c',
-          `echo "Starting SteamCMD to download CS2..."; steamcmd +login anonymous +app_update 730 +quit & sleep 30; echo "Force killing steamcmd..."; pkill -f steamcmd; sleep 2; echo "SteamCMD killed, starting CS2 server..."; cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server; echo "CS2 directory contents:"; ls -la; echo "Starting CS2 server..."; exec ${generateCS2StartupCommand(config, port, rconPort)}`
+          `echo "Downloading CS2 server files..."; steamcmd +login anonymous +app_update 730 +quit; echo "CS2 download complete. Container will exit."; exit 0`
         ],
-        ExposedPorts: {
-          [`${port}/tcp`]: {},
-          [`${port}/udp`]: {},
-          [`${rconPort}/tcp`]: {}
-        },
         HostConfig: {
-          PortBindings: {
-            [`${port}/tcp`]: [{ HostPort: `${port}` }],
-            [`${port}/udp`]: [{ HostPort: `${port}` }],
-            [`${rconPort}/tcp`]: [{ HostPort: `${rconPort}` }]
-          },
           Memory: (config.allocatedRam || 2048) * 1024 * 1024,
           RestartPolicy: {
-            Name: 'unless-stopped'
+            Name: 'no'
           }
         }
       }
@@ -369,10 +348,70 @@ app.post('/api/servers', authenticate, async (req, res) => {
 app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
   try {
     console.log(`▶️  Starting container: ${req.params.containerId}`)
-    const container = docker.getContainer(req.params.containerId)
-    await container.start()
-    console.log(`✅ Container started`)
-    res.json({ message: 'Server started', status: 'running' })
+    
+    // Get server info from database
+    const server = await prisma.server.findFirst({ 
+      where: { containerId: req.params.containerId } 
+    })
+    
+    if (!server) {
+      return res.status(404).json({ error: 'Server not found' })
+    }
+    
+    // For CS2 servers, create a new container for the actual game server
+    if (server.game === 'CS2') {
+      const gameContainerName = `gamecontrol-cs2-game-${server.id}`
+      const port = server.port
+      const rconPort = port + 100
+      
+      console.log(`🎮 Creating CS2 game server container...`)
+      
+      // Create CS2 game server container
+      const gameContainer = await docker.createContainer({
+        Image: 'steamcmd/steamcmd:latest',
+        name: gameContainerName,
+        Cmd: [
+          'bash', '-c',
+          `echo "Starting CS2 game server..."; cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server; echo "CS2 directory contents:"; ls -la; echo "Starting CS2 server..."; exec ${generateCS2StartupCommand(server, port, rconPort)}`
+        ],
+        ExposedPorts: {
+          [`${port}/tcp`]: {},
+          [`${port}/udp`]: {},
+          [`${rconPort}/tcp`]: {}
+        },
+        HostConfig: {
+          PortBindings: {
+            [`${port}/tcp`]: [{ HostPort: `${port}` }],
+            [`${port}/udp`]: [{ HostPort: `${port}` }],
+            [`${rconPort}/tcp`]: [{ HostPort: `${rconPort}` }]
+          },
+          Memory: (server.allocatedRam || 2048) * 1024 * 1024,
+          RestartPolicy: {
+            Name: 'unless-stopped'
+          }
+        }
+      })
+      
+      await gameContainer.start()
+      
+      // Update server with game container ID
+      await prisma.server.update({
+        where: { id: server.id },
+        data: { 
+          status: 'RUNNING',
+          containerId: gameContainer.id
+        }
+      })
+      
+      console.log(`✅ CS2 game server started`)
+      res.json({ message: 'CS2 game server started', status: 'running' })
+    } else {
+      // For other games, start the existing container
+      const container = docker.getContainer(req.params.containerId)
+      await container.start()
+      console.log(`✅ Container started`)
+      res.json({ message: 'Server started', status: 'running' })
+    }
   } catch (error) {
     console.error('❌ Error starting server:', error)
     res.status(500).json({ error: error.message })
