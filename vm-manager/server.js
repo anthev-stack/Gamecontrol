@@ -188,6 +188,9 @@ app.post('/api/servers', authenticate, async (req, res) => {
            apt-get install -y -qq wget unzip;
            echo "Installing 32-bit compatibility libraries...";
            apt-get install -y -qq lib32gcc-s1 lib32stdc++6;
+           echo "Creating steamcmd directory...";
+           mkdir -p /home/steam/steamcmd;
+           cd /home/steam/steamcmd;
            echo "Downloading CS2 server files...";
            wget -O steamcmd.tar.gz "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz";
            echo "Extracting steamcmd...";
