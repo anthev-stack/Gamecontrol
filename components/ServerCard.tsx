@@ -46,6 +46,8 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
   const trackDownloadProgress = async () => {
     if (server.game !== 'CS2' || isCS2Ready) return
 
+    console.log('📊 Dashboard: Tracking download progress for CS2 server', server.id) // Debug log
+
     try {
       const response = await fetch(`/api/servers/${server.id}/console/logs?tail=50`)
       if (response.ok) {
@@ -74,18 +76,24 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
 
         if (progressLogs.length > 0) {
           const latestLog = progressLogs[progressLogs.length - 1]
+          console.log('📊 Dashboard progress log:', latestLog) // Debug log
           
           // Try new steamcmd progress format first: "progress: 0.59 (331282603 / 56099402942)"
           const newProgressMatch = latestLog.match(/progress: (\d+\.?\d*) \((\d+) \/ (\d+)\)/)
           if (newProgressMatch) {
             const progress = parseFloat(newProgressMatch[1])
-            setDownloadProgress(Math.round(progress))
+            const roundedProgress = Math.round(progress)
+            console.log('📊 Dashboard progress update:', roundedProgress + '%') // Debug log
+            setDownloadProgress(roundedProgress)
           } else {
             // Fallback to old format: "[59%]"
             const percentMatch = latestLog.match(/\[(\d+)%\]/)
             if (percentMatch) {
-              setDownloadProgress(parseInt(percentMatch[1]))
+              const progress = parseInt(percentMatch[1])
+              console.log('📊 Dashboard progress update (old format):', progress + '%') // Debug log
+              setDownloadProgress(progress)
             } else if (latestLog.includes('Download complete') || latestLog.includes('Update complete')) {
+              console.log('📊 Dashboard progress complete: 100%') // Debug log
               setDownloadProgress(100)
             }
           }
