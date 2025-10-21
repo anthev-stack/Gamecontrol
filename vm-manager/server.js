@@ -574,8 +574,12 @@ app.get('/api/servers/:containerId/logs', authenticate, async (req, res) => {
       follow: follow === 'true'
     })
     
+    // Filter logs to show only game server output
+    const allLogs = logs.toString()
+    const filteredLogs = filterGameServerLogs(allLogs)
+    
     res.json({
-      logs: logs.toString(),
+      logs: filteredLogs,
       containerId: req.params.containerId
     })
   } catch (error) {
@@ -583,6 +587,54 @@ app.get('/api/servers/:containerId/logs', authenticate, async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 })
+
+// Helper function to filter game server logs
+function filterGameServerLogs(logs) {
+  const lines = logs.split('\n')
+  const filteredLines = []
+  
+  for (const line of lines) {
+    // Skip empty lines
+    if (!line.trim()) continue
+    
+    // Skip bash command prompts and responses
+    if (line.includes('$ ') || line.includes('Command sent to') || line.includes('bash: line')) continue
+    
+    // Skip Docker/system messages
+    if (line.includes('Docker') || line.includes('container') || line.includes('exec')) continue
+    
+    // Keep game server messages
+    if (
+      // Minecraft server messages
+      line.includes('[Server thread') || 
+      line.includes('[User Authenticator') ||
+      line.includes('[RCON Listener') ||
+      line.includes('joined the game') ||
+      line.includes('left the game') ||
+      line.includes('Server thread/INFO') ||
+      line.includes('Server thread/WARN') ||
+      line.includes('Server thread/ERROR') ||
+      // CS2 server messages
+      line.includes('Server starting') ||
+      line.includes('Map:') ||
+      line.includes('Server is ready') ||
+      line.includes('Player') ||
+      line.includes('connected') ||
+      line.includes('disconnected') ||
+      line.includes('Round') ||
+      line.includes('Bomb') ||
+      // General game messages
+      line.includes('INFO') ||
+      line.includes('WARN') ||
+      line.includes('ERROR') ||
+      line.includes('DEBUG')
+    ) {
+      filteredLines.push(line)
+    }
+  }
+  
+  return filteredLines.join('\n')
+}
 
 // Helper function to send RCON command to CS2 server
 async function sendRCONCommand(container, command) {
