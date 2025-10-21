@@ -197,7 +197,7 @@ app.post('/api/servers', authenticate, async (req, res) => {
            tar -xzf steamcmd.tar.gz;
            chmod +x steamcmd.sh;
            echo "Downloading CS2 server files...";
-           ./steamcmd.sh +login anonymous +app_update 730 +quit;
+           ./steamcmd.sh +force_install_dir /home/steam/cs2 +login anonymous +app_update 730 +quit;
            echo "CS2 download complete. Container will exit.";
            exit 0`
         ],
