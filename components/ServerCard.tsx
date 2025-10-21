@@ -49,6 +49,22 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
     console.log('📊 Dashboard: Tracking download progress for CS2 server', server.id) // Debug log
 
     try {
+      // First, check if the container is still running or has exited
+      const containerResponse = await fetch(`/api/servers/${server.containerId}`)
+      console.log('📊 Dashboard: Container status response:', containerResponse.status) // Debug log
+      
+      if (containerResponse.ok) {
+        const containerData = await containerResponse.json()
+        console.log('📊 Dashboard: Container status:', containerData) // Debug log
+        
+        // If container has exited, mark download as complete
+        if (containerData.State && containerData.State.Status === 'exited') {
+          console.log('📊 Dashboard: Container has exited, marking download complete') // Debug log
+          setDownloadProgress(100)
+          return
+        }
+      }
+      
       const response = await fetch(`/api/servers/${server.id}/console/logs?tail=50`)
       console.log('📊 Dashboard: API response status:', response.status) // Debug log
       
