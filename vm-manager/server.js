@@ -185,7 +185,7 @@ app.post('/api/servers', authenticate, async (req, res) => {
         ],
         Cmd: [
           'bash', '-c',
-          `steamcmd +login anonymous +app_update 730 +quit; cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server; echo "Starting CS2 server..."; exec ${generateCS2StartupCommand(config, port, rconPort)}`
+          `timeout 300 steamcmd +login anonymous +app_update 730 +quit || true; cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server; echo "Starting CS2 server..."; exec ${generateCS2StartupCommand(config, port, rconPort)}`
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},
