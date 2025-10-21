@@ -187,10 +187,7 @@ app.post('/api/servers', authenticate, async (req, res) => {
            apt-get update -qq;
            apt-get install -y -qq wget unzip;
            echo "Downloading CS2 server files...";
-           wget -O cs2-server.zip "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" || {
-             echo "Failed to download steamcmd, trying alternative...";
-             wget -O steamcmd.tar.gz "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz";
-           };
+           wget -O steamcmd.tar.gz "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz";
            echo "Extracting steamcmd...";
            tar -xzf steamcmd.tar.gz;
            chmod +x steamcmd.sh;
