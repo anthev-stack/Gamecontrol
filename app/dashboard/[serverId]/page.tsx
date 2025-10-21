@@ -237,17 +237,34 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
   }
 
   const handleServerAction = async (action: 'start' | 'stop' | 'restart') => {
+    setIsActionLoading(true)
+    setError('')
+    
     try {
+      console.log(`🔄 Attempting to ${action} server ${serverId}...`)
+      
       const response = await fetch(`/api/servers/${serverId}/${action}`, {
         method: 'POST'
       })
       
-      if (!response.ok) throw new Error(`Failed to ${action} server`)
+      console.log(`📡 Response status: ${response.status}`)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error(`❌ API Error:`, errorData)
+        throw new Error(errorData.error || `Failed to ${action} server`)
+      }
+      
+      const result = await response.json()
+      console.log(`✅ Server ${action} successful:`, result)
       
       // Refresh stats after action
       setTimeout(fetchServerStats, 2000)
     } catch (err) {
+      console.error(`❌ Error ${action}ing server:`, err)
       setError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setIsActionLoading(false)
     }
   }
 
@@ -687,8 +704,9 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
       steamAccount: server.steamAccount || '',
       customArgs: server.customArgs || ''
     })
-    const [isSaving, setIsSaving] = useState(false)
-    const [saveMessage, setSaveMessage] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState('')
+  const [isActionLoading, setIsActionLoading] = useState(false)
 
     // CS2 Game Mode configurations with their command lines
     const cs2GameModes = [
@@ -1104,23 +1122,24 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
             <div className="flex space-x-2">
               <button
                 onClick={() => handleServerAction('start')}
-                disabled={stats?.status === 'online'}
+                disabled={stats?.status === 'online' || isActionLoading}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Start
+                {isActionLoading ? 'Starting...' : 'Start'}
               </button>
               <button
                 onClick={() => handleServerAction('stop')}
-                disabled={stats?.status === 'offline'}
+                disabled={stats?.status === 'offline' || isActionLoading}
                 className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Stop
+                {isActionLoading ? 'Stopping...' : 'Stop'}
               </button>
               <button
                 onClick={() => handleServerAction('restart')}
-                className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+                disabled={isActionLoading}
+                className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Restart
+                {isActionLoading ? 'Restarting...' : 'Restart'}
               </button>
             </div>
           </div>
