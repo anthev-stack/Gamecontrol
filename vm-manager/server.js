@@ -177,23 +177,25 @@ app.post('/api/servers', authenticate, async (req, res) => {
     let containerConfig = {}
     
     if (gameType === 'CS2') {
-      // First stage: Download CS2 with steamcmd
+      // First stage: Download CS2 with wget
       containerConfig = {
-        Image: 'steamcmd/steamcmd:latest',
+        Image: 'ubuntu:22.04',
         name: containerName,
         Cmd: [
           'bash', '-c',
           `echo "Starting CS2 download process...";
-           timeout 300 steamcmd +login anonymous +app_update 730 +quit || {
-             echo "SteamCMD timed out, force killing...";
-             pkill -f steamcmd || true;
-             sleep 2;
-             echo "Retrying with force kill approach...";
-             steamcmd +login anonymous +app_update 730 +quit || {
-               echo "Download failed, exiting...";
-               exit 1;
-             };
+           apt-get update -qq;
+           apt-get install -y -qq wget unzip;
+           echo "Downloading CS2 server files...";
+           wget -O cs2-server.zip "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" || {
+             echo "Failed to download steamcmd, trying alternative...";
+             wget -O steamcmd.tar.gz "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz";
            };
+           echo "Extracting steamcmd...";
+           tar -xzf steamcmd.tar.gz;
+           chmod +x steamcmd.sh;
+           echo "Downloading CS2 server files...";
+           ./steamcmd.sh +login anonymous +app_update 730 +quit;
            echo "CS2 download complete. Container will exit.";
            exit 0`
         ],
