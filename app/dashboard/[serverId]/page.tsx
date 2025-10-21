@@ -293,6 +293,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
   const [error, setError] = useState<string | null>(null)
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [consoleRefreshTrigger, setConsoleRefreshTrigger] = useState(0)
+  const [isCS2Ready, setIsCS2Ready] = useState(false)
   const router = useRouter()
 
   const serverId = params.serverId
@@ -325,9 +326,28 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
       if (response.ok) {
         const data = await response.json()
         setStats(data)
+        
+        // For CS2 servers, check if download is complete
+        if (server?.game === 'CS2') {
+          checkCS2Ready()
+        }
       }
     } catch (err) {
       console.error('Failed to fetch server stats:', err)
+    }
+  }
+
+  const checkCS2Ready = async () => {
+    try {
+      // Check if the container is in "exited" state (download complete)
+      const response = await fetch(`/api/servers/${serverId}`)
+      if (response.ok) {
+        const data = await response.json()
+        // If container is stopped/exited, CS2 download is complete
+        setIsCS2Ready(data.status === 'stopped' || data.status === 'exited')
+      }
+    } catch (err) {
+      console.error('Error checking CS2 ready status:', err)
     }
   }
 
@@ -1214,20 +1234,27 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
               <div className="ml-4 flex items-center">
                 <div className={`w-3 h-3 rounded-full mr-2 ${
                   stats?.status === 'online' ? 'bg-green-500' : 
-                  stats?.status === 'offline' ? 'bg-gray-400' : 'bg-red-500'
+                  stats?.status === 'offline' ? 'bg-gray-400' : 
+                  server?.game === 'CS2' && !isCS2Ready ? 'bg-yellow-500' : 'bg-red-500'
                 }`}></div>
                 <span className="text-sm text-gray-300 capitalize">
-                  {stats?.status || 'Unknown'}
+                  {server?.game === 'CS2' && !isCS2Ready ? 'Downloading CS2...' : 
+                   stats?.status || 'Unknown'}
                 </span>
               </div>
             </div>
             <div className="flex space-x-2">
               <button
                 onClick={() => handleServerAction('start')}
-                disabled={stats?.status === 'online' || isActionLoading}
+                disabled={
+                  stats?.status === 'online' || 
+                  isActionLoading || 
+                  (server?.game === 'CS2' && !isCS2Ready)
+                }
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isActionLoading ? 'Starting...' : 'Start'}
+                {isActionLoading ? 'Starting...' : 
+                 (server?.game === 'CS2' && !isCS2Ready) ? 'Downloading...' : 'Start'}
               </button>
               <button
                 onClick={() => handleServerAction('stop')}
