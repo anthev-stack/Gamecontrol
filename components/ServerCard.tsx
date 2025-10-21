@@ -16,6 +16,7 @@ interface ServerCardProps {
 export default function ServerCard({ server, onEdit, onDelete, onRefresh }: ServerCardProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isCS2Ready, setIsCS2Ready] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState(0)
   const router = useRouter()
 
   const gameIcons: Record<GameType, React.ComponentType<{ className?: string }>> = {
@@ -28,8 +29,61 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
   useEffect(() => {
     if (server.game === 'CS2') {
       checkCS2Ready()
+      trackDownloadProgress()
+      
+      // Poll for progress every 2 seconds
+      const interval = setInterval(() => {
+        if (!isCS2Ready) {
+          trackDownloadProgress()
+        }
+      }, 2000)
+      
+      return () => clearInterval(interval)
     }
-  }, [server.game, server.id])
+  }, [server.game, server.id, isCS2Ready])
+
+  // Track download progress for CS2 servers
+  const trackDownloadProgress = async () => {
+    if (server.game !== 'CS2' || isCS2Ready) return
+
+    try {
+      const response = await fetch(`/api/servers/${server.id}/console/logs?tail=50`)
+      if (response.ok) {
+        const logs = await response.json()
+        
+        // Look for Steam update progress in logs
+        const progressLogs = logs.filter((log: string) => 
+          log.includes('[ 0%]') || 
+          log.includes('[10%]') || 
+          log.includes('[20%]') || 
+          log.includes('[30%]') || 
+          log.includes('[40%]') || 
+          log.includes('[50%]') || 
+          log.includes('[60%]') || 
+          log.includes('[70%]') || 
+          log.includes('[80%]') || 
+          log.includes('[90%]') || 
+          log.includes('[100%]') ||
+          log.includes('Download complete') ||
+          log.includes('Update complete')
+        )
+
+        if (progressLogs.length > 0) {
+          const latestLog = progressLogs[progressLogs.length - 1]
+          
+          // Extract percentage from log
+          const percentMatch = latestLog.match(/\[(\d+)%\]/)
+          if (percentMatch) {
+            setDownloadProgress(parseInt(percentMatch[1]))
+          } else if (latestLog.includes('Download complete') || latestLog.includes('Update complete')) {
+            setDownloadProgress(100)
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error tracking download progress:', err)
+    }
+  }
 
   const checkCS2Ready = async () => {
     try {
@@ -197,17 +251,35 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
 
         <div className="flex gap-2 mb-3">
           {server.status === 'STOPPED' && (
-            <button
-              onClick={() => handleStatusChange('start')}
-              disabled={isLoading || !server.host || (server.game === 'CS2' && !isCS2Ready)}
-              className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={
-                !server.host ? 'Server must be deployed to VM first' :
-                server.game === 'CS2' && !isCS2Ready ? 'CS2 download in progress...' : ''
-              }
-            >
-              {server.game === 'CS2' && !isCS2Ready ? 'Downloading...' : 'Start'}
-            </button>
+            <div className="flex-1">
+              <button
+                onClick={() => handleStatusChange('start')}
+                disabled={isLoading || !server.host || (server.game === 'CS2' && !isCS2Ready)}
+                className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title={
+                  !server.host ? 'Server must be deployed to VM first' :
+                  server.game === 'CS2' && !isCS2Ready ? 'CS2 download in progress...' : ''
+                }
+              >
+                {server.game === 'CS2' && !isCS2Ready ? 'Downloading...' : 'Start'}
+              </button>
+              
+              {/* CS2 Download Progress Bar */}
+              {server.game === 'CS2' && !isCS2Ready && (
+                <div className="mt-2">
+                  <div className="flex justify-between text-xs text-gray-400 mb-1">
+                    <span>Downloading CS2...</span>
+                    <span>{downloadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${downloadProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
           {server.status === 'RUNNING' && (
             <>
