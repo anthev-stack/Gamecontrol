@@ -135,7 +135,7 @@ function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger
           // Only update if we have new logs
           setLogs(prev => {
             const lastLog = prev[prev.length - 1]
-            const newLogsFromIndex = newLogs.findIndex(log => log === lastLog)
+            const newLogsFromIndex = newLogs.findIndex((log: string) => log === lastLog)
             
             if (newLogsFromIndex === -1 || newLogsFromIndex < newLogs.length - 1) {
               // We have new logs
