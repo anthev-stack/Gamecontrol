@@ -185,7 +185,9 @@ app.post('/api/servers', authenticate, async (req, res) => {
           'bash', '-c',
           `echo "Starting CS2 download process...";
            apt-get update -qq;
-           apt-get install -y -qq wget unzip lib32gcc-s1;
+           apt-get install -y -qq wget unzip;
+           echo "Installing 32-bit compatibility libraries...";
+           apt-get install -y -qq lib32gcc-s1 lib32stdc++6;
            echo "Downloading CS2 server files...";
            wget -O steamcmd.tar.gz "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz";
            echo "Extracting steamcmd...";
