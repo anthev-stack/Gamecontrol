@@ -48,7 +48,10 @@ function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger
     // Load initial logs
     loadLogs()
 
-    // Try Server-Sent Events first
+    // Start polling immediately for reliable updates
+    setupPolling()
+
+    // Also try Server-Sent Events (will override polling if successful)
     setupSSE()
 
     return () => {
@@ -106,13 +109,9 @@ function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger
       eventSource.onerror = (error) => {
         console.error('SSE connection error:', error)
         setIsConnected(false)
-        // Fallback to polling after SSE fails
-        setTimeout(() => {
-          if (!isConnected) {
-            console.log('🔄 Falling back to polling...')
-            setupPolling()
-          }
-        }, 2000)
+        // Immediately fallback to polling after SSE fails
+        console.log('🔄 SSE failed, falling back to polling...')
+        setupPolling()
       }
     } catch (error) {
       console.error('Error setting up SSE:', error)
@@ -124,34 +123,48 @@ function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger
     console.log('🔄 Setting up polling fallback...')
     setConnectionMethod('polling')
     
-    // Poll every 2 seconds
+    // Poll every 1 second for more responsive updates
     pollingIntervalRef.current = setInterval(async () => {
       try {
-        const response = await fetch(`/api/servers/${server.id}/console/logs?tail=50`)
+        const response = await fetch(`/api/servers/${server.id}/console/logs?tail=100`)
         if (response.ok) {
           const data = await response.json()
           const newLogs = data.logs.split('\n').filter((line: string) => line.trim())
           
-          // Only update if we have new logs
+          // Always update logs to ensure we get the latest
           setLogs(prev => {
-            const lastLog = prev[prev.length - 1]
-            const newLogsFromIndex = newLogs.findIndex((log: string) => log === lastLog)
+            // If we have no previous logs, just set the new ones
+            if (prev.length === 0) {
+              return newLogs
+            }
             
-            if (newLogsFromIndex === -1 || newLogsFromIndex < newLogs.length - 1) {
-              // We have new logs
-              const newLogsToAdd = newLogsFromIndex === -1 ? newLogs : newLogs.slice(newLogsFromIndex + 1)
+            // Find the last log we have and get new ones from there
+            const lastLog = prev[prev.length - 1]
+            const lastLogIndex = newLogs.findIndex((log: string) => log === lastLog)
+            
+            if (lastLogIndex === -1) {
+              // Last log not found, might be a complete refresh needed
+              return newLogs
+            } else if (lastLogIndex < newLogs.length - 1) {
+              // We have new logs after our last one
+              const newLogsToAdd = newLogs.slice(lastLogIndex + 1)
               return [...prev, ...newLogsToAdd]
             }
+            
+            // No new logs, keep existing
             return prev
           })
           
           setIsConnected(true)
+        } else {
+          console.error('Polling response not ok:', response.status)
+          setIsConnected(false)
         }
       } catch (error) {
         console.error('Polling error:', error)
         setIsConnected(false)
       }
-    }, 2000)
+    }, 1000) // Poll every 1 second
   }
 
   const loadLogs = async () => {
@@ -211,12 +224,6 @@ function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger
             </span>
           </div>
           <button
-            onClick={loadLogs}
-            className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-          >
-            Refresh
-          </button>
-          <button
             onClick={clearLogs}
             className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
           >
@@ -262,7 +269,7 @@ function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger
           <strong>Tips:</strong>
         </div>
         <ul className="list-disc list-inside ml-4 space-y-1">
-          <li>Console updates automatically every 2 seconds (polling) or in real-time (SSE)</li>
+          <li>Console updates automatically every 1 second - no manual refresh needed!</li>
           <li>For Minecraft: Use <code className="bg-gray-700 px-1 rounded text-gray-300">say hello</code>, <code className="bg-gray-700 px-1 rounded text-gray-300">op player</code>, <code className="bg-gray-700 px-1 rounded text-gray-300">time set 1200</code></li>
           <li>For CS2: Use <code className="bg-gray-700 px-1 rounded text-gray-300">sv_cheats 1</code>, <code className="bg-gray-700 px-1 rounded text-gray-300">mp_restartgame 1</code></li>
           <li>Use <code className="bg-gray-700 px-1 rounded text-gray-300">status</code> to check server status</li>
