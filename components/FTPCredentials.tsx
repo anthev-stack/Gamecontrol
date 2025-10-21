@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle, AlertTriangle, RotateCcw, Lightbulb, Folder, FolderOpen } from 'lucide-react'
+import { CheckCircle, AlertTriangle, RotateCcw, Lightbulb, Folder, FolderOpen, Copy, Server, User, Key, Globe } from 'lucide-react'
 
 interface FTPInfo {
   enabled: boolean
@@ -164,76 +164,80 @@ export default function FTPCredentials() {
           </div>
           <button
             onClick={() => copyToClipboard(newPassword, 'Password')}
-            className="mt-2 text-sm text-blue-400 hover:text-blue-300"
+            className="mt-2 text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
           >
-            📋 Copy Password
+            <Copy className="w-3 h-3" />
+            Copy Password
           </button>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <label className="block text-xs text-gray-400 mb-1">FTP Host</label>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 bg-gray-800/80 px-4 py-2 rounded font-mono text-sm text-gray-200 border border-gray-600/50">
-              {ftpInfo.host}
+      <div className="mb-6">
+        <h3 className="text-lg font-medium text-white mb-4">FTP Connection Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">FTP Host</label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 p-3 bg-gray-800/80 rounded-lg font-mono text-sm text-gray-100 border border-gray-600/50">
+                {ftpInfo.host}
+              </div>
+              <button
+                onClick={() => copyToClipboard(ftpInfo.host!, 'Host')}
+                className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                title="Copy to clipboard"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
             </div>
-            <button
-              onClick={() => copyToClipboard(ftpInfo.host!, 'Host')}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
-              title="Copy to clipboard"
-            >
-              📋
-            </button>
           </div>
-        </div>
 
-        <div>
-          <label className="block text-xs text-gray-400 mb-1">Port</label>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 bg-gray-800/80 px-4 py-2 rounded font-mono text-sm text-gray-200 border border-gray-600/50">
-              {ftpInfo.port}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">FTP Port</label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 p-3 bg-gray-800/80 rounded-lg font-mono text-sm text-gray-100 border border-gray-600/50">
+                {ftpInfo.port}
+              </div>
+              <button
+                onClick={() => copyToClipboard(ftpInfo.port!.toString(), 'Port')}
+                className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                title="Copy to clipboard"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
             </div>
-            <button
-              onClick={() => copyToClipboard(ftpInfo.port!.toString(), 'Port')}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
-              title="Copy to clipboard"
-            >
-              📋
-            </button>
           </div>
-        </div>
 
-        <div>
-          <label className="block text-xs text-gray-400 mb-1">Username</label>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 bg-gray-800/80 px-4 py-2 rounded font-mono text-sm text-gray-200 border border-gray-600/50">
-              {ftpInfo.username}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Username</label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 p-3 bg-gray-800/80 rounded-lg font-mono text-sm text-gray-100 border border-gray-600/50">
+                {ftpInfo.username}
+              </div>
+              <button
+                onClick={() => copyToClipboard(ftpInfo.username!, 'Username')}
+                className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                title="Copy to clipboard"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
             </div>
-            <button
-              onClick={() => copyToClipboard(ftpInfo.username!, 'Username')}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
-              title="Copy to clipboard"
-            >
-              📋
-            </button>
           </div>
-        </div>
 
-        <div>
-          <label className="block text-xs text-gray-400 mb-1">Password</label>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 bg-gray-800/80 px-4 py-2 rounded font-mono text-sm text-gray-200 border border-gray-600/50">
-              ••••••••••••••••
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 p-3 bg-gray-800/80 rounded-lg font-mono text-sm text-gray-100 border border-gray-600/50">
+                {showPassword && newPassword ? newPassword : '••••••••••••••••'}
+              </div>
+              <button
+                onClick={handleResetPassword}
+                disabled={resetLoading}
+                className="p-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                title="Reset password"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
             </div>
-            <button
-              onClick={handleResetPassword}
-              disabled={resetLoading}
-              className="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-sm disabled:opacity-50"
-              title="Reset password"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </div>
