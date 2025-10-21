@@ -41,8 +41,8 @@ export async function createFTPUser(userId, password) {
     await fs.mkdir(path.join(userHomeDir, 'backups'), { recursive: true })
     await fs.mkdir(path.join(userHomeDir, 'shared'), { recursive: true })
     
-    // Create system user
-    await execAsync(`sudo useradd -d ${userHomeDir} -s /bin/bash ${username}`)
+    // Create system user with restricted shell
+    await execAsync(`sudo useradd -d ${userHomeDir} -s /bin/false -M ${username}`)
     
     // Set password
     await execAsync(`echo '${username}:${password}' | sudo chpasswd`)
@@ -50,8 +50,19 @@ export async function createFTPUser(userId, password) {
     // Set ownership
     await execAsync(`sudo chown -R ${username}:${username} ${userHomeDir}`)
     
+    // Set up chroot jail - user can only access their home directory
+    await execAsync(`sudo chmod 755 ${userHomeDir}`)
+    await execAsync(`sudo chmod 755 ${path.join(userHomeDir, 'servers')}`)
+    await execAsync(`sudo chmod 755 ${path.join(userHomeDir, 'backups')}`)
+    await execAsync(`sudo chmod 755 ${path.join(userHomeDir, 'shared')}`)
+    
     // Add to vsftpd user list
     await execAsync(`echo '${username}' | sudo tee -a ${VSFTPD_USER_LIST}`)
+    
+    // Configure vsftpd for chroot jail
+    await execAsync(`echo "local_root=${userHomeDir}" | sudo tee -a /etc/vsftpd.conf`)
+    await execAsync(`echo "chroot_local_user=YES" | sudo tee -a /etc/vsftpd.conf`)
+    await execAsync(`echo "allow_writeable_chroot=YES" | sudo tee -a /etc/vsftpd.conf`)
     
     // Restart vsftpd
     await execAsync('sudo systemctl restart vsftpd')
@@ -138,21 +149,60 @@ export async function linkServerToFTP(containerId, username, serverName, serverH
     try {
       console.log(`📁 Copying files from container ${containerId}...`)
       
-      // First, try to copy the entire container filesystem
-      await execAsync(`docker cp ${containerId}:/ ${userServerDir}/`)
+      // Create a temporary directory for copying
+      const tempDir = `/tmp/container_${containerId}_${Date.now()}`
+      await execAsync(`sudo mkdir -p ${tempDir}`)
       
-      // Check if we got files
-      const { stdout: fileCount } = await execAsync(`ls -la ${userServerDir} | wc -l`)
-      if (parseInt(fileCount.trim()) <= 2) {
-        console.log('Container copy failed, trying volume path...')
+      // Copy entire container filesystem to temp directory
+      await execAsync(`docker cp ${containerId}:/ ${tempDir}/`)
+      
+      // Determine game type and copy only relevant files
+      if (serverName.toLowerCase().includes('minecraft')) {
+        // For Minecraft, copy only the data directory and essential files
+        await execAsync(`sudo mkdir -p ${userServerDir}/data`)
         
-        // Fallback to volume path
-        if (volumePath && volumePath !== '') {
-          await execAsync(`sudo cp -r ${volumePath}/* ${userServerDir}/ 2>/dev/null || true`)
-        }
+        // Copy essential Minecraft files
+        await execAsync(`sudo cp ${tempDir}/eula.txt ${userServerDir}/ 2>/dev/null || true`)
+        await execAsync(`sudo cp ${tempDir}/server.properties ${userServerDir}/ 2>/dev/null || true`)
+        await execAsync(`sudo cp ${tempDir}/server.jar ${userServerDir}/ 2>/dev/null || true`)
+        await execAsync(`sudo cp ${tempDir}/start.sh ${userServerDir}/ 2>/dev/null || true`)
+        
+        // Copy data directory if it exists
+        await execAsync(`sudo cp -r ${tempDir}/data/* ${userServerDir}/data/ 2>/dev/null || true`)
+        
+        // Create essential files if they don't exist
+        await execAsync(`echo "eula=true" | sudo tee ${userServerDir}/eula.txt`)
+        await execAsync(`echo "server-port=${serverPort}" | sudo tee ${userServerDir}/server.properties`)
+        
+      } else if (serverName.toLowerCase().includes('cs2')) {
+        // For CS2, copy only the game directory and config files
+        await execAsync(`sudo mkdir -p ${userServerDir}/game`)
+        await execAsync(`sudo mkdir -p ${userServerDir}/config`)
+        
+        // Copy CS2 game files
+        await execAsync(`sudo cp -r ${tempDir}/home/steam/steamcmd/steamapps/common/Counter-Strike* ${userServerDir}/game/ 2>/dev/null || true`)
+        await execAsync(`sudo cp -r ${tempDir}/cs2* ${userServerDir}/ 2>/dev/null || true`)
+        await execAsync(`sudo cp -r ${tempDir}/*.cfg ${userServerDir}/ 2>/dev/null || true`)
+        
+        // Create essential CS2 files if they don't exist
+        await execAsync(`echo "// CS2 Server Configuration" | sudo tee ${userServerDir}/server.cfg`)
+        await execAsync(`echo "hostname \"${serverName}\"" | sudo tee -a ${userServerDir}/server.cfg`)
+        await execAsync(`echo "rcon_password \"changeme\"" | sudo tee -a ${userServerDir}/server.cfg`)
+        
+      } else if (serverName.toLowerCase().includes('rust')) {
+        // For Rust, copy only the server files
+        await execAsync(`sudo mkdir -p ${userServerDir}/server`)
+        await execAsync(`sudo cp -r ${tempDir}/server/* ${userServerDir}/server/ 2>/dev/null || true`)
+        await execAsync(`sudo cp ${tempDir}/*.cfg ${userServerDir}/ 2>/dev/null || true`)
+        
+        // Create essential Rust files if they don't exist
+        await execAsync(`echo "// Rust Server Configuration" | sudo tee ${userServerDir}/server.cfg`)
       }
       
-      // If still no files, try to find where the server files are
+      // Clean up temp directory
+      await execAsync(`sudo rm -rf ${tempDir}`)
+      
+      // Check if we got any files
       const { stdout: finalFileCount } = await execAsync(`ls -la ${userServerDir} | wc -l`)
       if (parseInt(finalFileCount.trim()) <= 2) {
         console.log('No files found, creating a placeholder directory...')
