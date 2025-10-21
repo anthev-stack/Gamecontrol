@@ -29,8 +29,10 @@ function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger
   const [command, setCommand] = useState('')
   const [isConnected, setIsConnected] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [connectionMethod, setConnectionMethod] = useState<'sse' | 'polling'>('sse')
   const logsEndRef = useRef<HTMLDivElement>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const scrollToBottom = () => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -46,37 +48,18 @@ function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger
     // Load initial logs
     loadLogs()
 
-    // Set up real-time console stream
-    const eventSource = new EventSource(`/api/servers/${server.id}/console/stream`)
-    eventSourceRef.current = eventSource
-
-    eventSource.onopen = () => {
-      setIsConnected(true)
-    }
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        if (data.type === 'log') {
-          setLogs(prev => [...prev, data.message])
-        } else if (data.type === 'connected') {
-          console.log('Console connected')
-        } else if (data.type === 'error') {
-          console.error('Console error:', data.message)
-        }
-      } catch (error) {
-        console.error('Error parsing console data:', error)
-      }
-    }
-
-    eventSource.onerror = (error) => {
-      console.error('Console stream error:', error)
-      setIsConnected(false)
-    }
+    // Try Server-Sent Events first
+    setupSSE()
 
     return () => {
-      eventSource.close()
-      eventSourceRef.current = null
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+        eventSourceRef.current = null
+      }
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+        pollingIntervalRef.current = null
+      }
     }
   }, [server.containerId, server.id])
 
@@ -88,6 +71,88 @@ function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger
       loadLogs() // Reload fresh logs
     }
   }, [refreshTrigger])
+
+  const setupSSE = () => {
+    try {
+      const eventSource = new EventSource(`/api/servers/${server.id}/console/stream`)
+      eventSourceRef.current = eventSource
+
+      eventSource.onopen = () => {
+        console.log('✅ SSE connected')
+        setIsConnected(true)
+        setConnectionMethod('sse')
+        // Clear any existing polling
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current)
+          pollingIntervalRef.current = null
+        }
+      }
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'log') {
+            setLogs(prev => [...prev, data.message])
+          } else if (data.type === 'connected') {
+            console.log('Console connected via SSE')
+          } else if (data.type === 'error') {
+            console.error('Console error:', data.message)
+          }
+        } catch (error) {
+          console.error('Error parsing console data:', error)
+        }
+      }
+
+      eventSource.onerror = (error) => {
+        console.error('SSE connection error:', error)
+        setIsConnected(false)
+        // Fallback to polling after SSE fails
+        setTimeout(() => {
+          if (!isConnected) {
+            console.log('🔄 Falling back to polling...')
+            setupPolling()
+          }
+        }, 2000)
+      }
+    } catch (error) {
+      console.error('Error setting up SSE:', error)
+      setupPolling()
+    }
+  }
+
+  const setupPolling = () => {
+    console.log('🔄 Setting up polling fallback...')
+    setConnectionMethod('polling')
+    
+    // Poll every 2 seconds
+    pollingIntervalRef.current = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/servers/${server.id}/console/logs?tail=50`)
+        if (response.ok) {
+          const data = await response.json()
+          const newLogs = data.logs.split('\n').filter((line: string) => line.trim())
+          
+          // Only update if we have new logs
+          setLogs(prev => {
+            const lastLog = prev[prev.length - 1]
+            const newLogsFromIndex = newLogs.findIndex(log => log === lastLog)
+            
+            if (newLogsFromIndex === -1 || newLogsFromIndex < newLogs.length - 1) {
+              // We have new logs
+              const newLogsToAdd = newLogsFromIndex === -1 ? newLogs : newLogs.slice(newLogsFromIndex + 1)
+              return [...prev, ...newLogsToAdd]
+            }
+            return prev
+          })
+          
+          setIsConnected(true)
+        }
+      } catch (error) {
+        console.error('Polling error:', error)
+        setIsConnected(false)
+      }
+    }, 2000)
+  }
 
   const loadLogs = async () => {
     try {
@@ -142,9 +207,15 @@ function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <span className="text-sm text-gray-300">
-              {isConnected ? 'Connected' : 'Disconnected'}
+              {isConnected ? `Connected (${connectionMethod.toUpperCase()})` : 'Disconnected'}
             </span>
           </div>
+          <button
+            onClick={loadLogs}
+            className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+          >
+            Refresh
+          </button>
           <button
             onClick={clearLogs}
             className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
@@ -191,10 +262,11 @@ function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger
           <strong>Tips:</strong>
         </div>
         <ul className="list-disc list-inside ml-4 space-y-1">
+          <li>Console updates automatically every 2 seconds (polling) or in real-time (SSE)</li>
+          <li>For Minecraft: Use <code className="bg-gray-700 px-1 rounded text-gray-300">say hello</code>, <code className="bg-gray-700 px-1 rounded text-gray-300">op player</code>, <code className="bg-gray-700 px-1 rounded text-gray-300">time set 1200</code></li>
+          <li>For CS2: Use <code className="bg-gray-700 px-1 rounded text-gray-300">sv_cheats 1</code>, <code className="bg-gray-700 px-1 rounded text-gray-300">mp_restartgame 1</code></li>
           <li>Use <code className="bg-gray-700 px-1 rounded text-gray-300">status</code> to check server status</li>
           <li>Use <code className="bg-gray-700 px-1 rounded text-gray-300">ls -la</code> to list files</li>
-          <li>Use <code className="bg-gray-700 px-1 rounded text-gray-300">ps aux</code> to see running processes</li>
-          <li>For CS2: Use <code className="bg-gray-700 px-1 rounded text-gray-300">./game/bin/linuxsteamrt64/cs2 -help</code></li>
         </ul>
       </div>
     </div>

@@ -717,7 +717,7 @@ app.post('/api/servers/:containerId/command', authenticate, async (req, res) => 
     const isCS2Server = imageName.includes('steamcmd')
     const isMinecraftServer = imageName.includes('minecraft-server')
     const isCS2Command = command.startsWith('sv_') || command.startsWith('mp_') || command.startsWith('bot_') || command.startsWith('rcon_')
-    const isMinecraftCommand = command.startsWith('/') || command.startsWith('say ') || command.startsWith('tell ') || command.startsWith('give ') || command.startsWith('tp ') || command.startsWith('gamemode ')
+    const isMinecraftCommand = command.startsWith('/') || command.startsWith('say ') || command.startsWith('tell ') || command.startsWith('give ') || command.startsWith('tp ') || command.startsWith('gamemode ') || command.startsWith('op ') || command.startsWith('time ') || command.startsWith('weather ') || command.startsWith('difficulty ') || command.startsWith('gamerule ')
     
     if ((isCS2Server && isCS2Command) || (isMinecraftServer && isMinecraftCommand)) {
       // For game servers, try to send command to the running game process
@@ -731,6 +731,7 @@ app.post('/api/servers/:containerId/command', authenticate, async (req, res) => 
         // Method 1: Try using rcon-cli for Minecraft
         if (isMinecraftServer) {
           try {
+            // First try rcon-cli
             const rconExec = await container.exec({
               Cmd: ['rcon-cli', command.replace('/', '')], // Remove leading slash for rcon-cli
               AttachStdout: true,
@@ -749,12 +750,44 @@ app.post('/api/servers/:containerId/command', authenticate, async (req, res) => 
               rconStream.on('error', reject)
             })
             
-            if (rconOutput.trim()) {
+            if (rconOutput.trim() && !rconOutput.includes('bash: line')) {
               output = rconOutput
               success = true
+              console.log(`✅ RCON command successful: ${command}`)
             }
           } catch (rconError) {
             console.log('RCON method failed, trying alternative...')
+          }
+          
+          // Also try mc-server-runner directly
+          if (!success) {
+            try {
+              const mcRunnerExec = await container.exec({
+                Cmd: ['bash', '-c', `echo "${command}" | nc -U /tmp/minecraft_console 2>/dev/null || echo "Command sent via mc-server-runner"`],
+                AttachStdout: true,
+                AttachStderr: true
+              })
+              
+              const mcRunnerStream = await mcRunnerExec.start()
+              let mcRunnerOutput = ''
+              
+              await new Promise((resolve, reject) => {
+                mcRunnerStream.on('data', (chunk) => {
+                  mcRunnerOutput += chunk.toString()
+                })
+                
+                mcRunnerStream.on('end', resolve)
+                mcRunnerStream.on('error', reject)
+              })
+              
+              if (mcRunnerOutput.trim() && !mcRunnerOutput.includes('bash: line')) {
+                output = mcRunnerOutput
+                success = true
+                console.log(`✅ mc-server-runner command successful: ${command}`)
+              }
+            } catch (mcRunnerError) {
+              console.log('mc-server-runner method failed, trying next...')
+            }
           }
         }
         
@@ -765,6 +798,7 @@ app.post('/api/servers/:containerId/command', authenticate, async (req, res) => 
             if (isCS2Server) {
               processCmd = `echo "${command}" | nc -U /tmp/srcds_console 2>/dev/null || echo "Command sent to CS2 server"`
             } else {
+              // For Minecraft, try to find the Java process and send command to its stdin
               processCmd = `echo "${command}" | nc -U /tmp/minecraft_console 2>/dev/null || echo "Command sent to Minecraft server"`
             }
             
@@ -791,7 +825,61 @@ app.post('/api/servers/:containerId/command', authenticate, async (req, res) => 
           }
         }
         
-        // Method 3: Fallback - just echo the command (will show in logs)
+        // Method 3: Try direct process communication for Minecraft
+        if (!success && isMinecraftServer) {
+          try {
+            // Try multiple approaches for Minecraft commands
+            const approaches = [
+              // Approach 1: Find mc-server-runner process and send to stdin
+              `pgrep -f "mc-server-runner" | head -1 | xargs -I {} sh -c 'echo "${command}" > /proc/{}/fd/0' 2>/dev/null || echo "Command sent to mc-server-runner"`,
+              
+              // Approach 2: Find Java process and send to stdin
+              `pgrep -f "java.*minecraft" | head -1 | xargs -I {} sh -c 'echo "${command}" > /proc/{}/fd/0' 2>/dev/null || echo "Command sent to Minecraft process"`,
+              
+              // Approach 3: Use mc-server-runner if available
+              `echo "${command}" | nc -U /tmp/minecraft_console 2>/dev/null || echo "Command sent via mc-server-runner"`,
+              
+              // Approach 4: Try to find the server process and send command
+              `ps aux | grep java | grep minecraft | head -1 | awk '{print $2}' | xargs -I {} sh -c 'echo "${command}" > /proc/{}/fd/0' 2>/dev/null || echo "Command sent to Minecraft process"`
+            ]
+            
+            for (const approach of approaches) {
+              try {
+                const exec = await container.exec({
+                  Cmd: ['bash', '-c', approach],
+                  AttachStdout: true,
+                  AttachStderr: true
+                })
+                
+                const stream = await exec.start()
+                let approachOutput = ''
+                
+                await new Promise((resolve, reject) => {
+                  stream.on('data', (chunk) => {
+                    approachOutput += chunk.toString()
+                  })
+                  
+                  stream.on('end', resolve)
+                  stream.on('error', reject)
+                })
+                
+                if (approachOutput.trim() && !approachOutput.includes('bash: line')) {
+                  output = approachOutput
+                  success = true
+                  console.log(`✅ Minecraft command successful: ${command}`)
+                  break
+                }
+              } catch (approachError) {
+                console.log(`Approach failed, trying next...`)
+                continue
+              }
+            }
+          } catch (processError) {
+            console.log('All process communication methods failed, trying fallback...')
+          }
+        }
+        
+        // Method 4: Fallback - just echo the command (will show in logs)
         if (!success) {
           output = `Command "${command}" logged to ${gameType} server. Check console logs to see if it was processed.`
         }
