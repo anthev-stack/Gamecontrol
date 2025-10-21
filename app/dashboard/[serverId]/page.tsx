@@ -198,6 +198,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
   const [activeTab, setActiveTab] = useState('overview')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isActionLoading, setIsActionLoading] = useState(false)
   const router = useRouter()
 
   const serverId = params.serverId
@@ -706,7 +707,6 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
     })
   const [isSaving, setIsSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
-  const [isActionLoading, setIsActionLoading] = useState(false)
 
     // CS2 Game Mode configurations with their command lines
     const cs2GameModes = [
