@@ -49,7 +49,9 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
     try {
       const response = await fetch(`/api/servers/${server.id}/console/logs?tail=50`)
       if (response.ok) {
-        const logs = await response.json()
+        const data = await response.json()
+        const logsString = data.logs || ''
+        const logs = logsString.split('\n').filter(log => log.trim() !== '')
         
         // Look for Steam update progress in logs - both old and new formats
         const progressLogs = logs.filter((log: string) => 
