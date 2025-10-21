@@ -88,8 +88,8 @@ function releasePort(port) {
 
 // Generate CS2 startup command based on configuration
 function generateCS2StartupCommand(config, port, rconPort) {
-  // For cs2server/cs2 image, use the built-in startup script
-  const baseCommand = '/home/steam/cs2-dedicated/srcds_run'
+  // For steamcmd image, use the CS2 binary directly
+  const baseCommand = './game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon'
   
   // Game mode configuration
   const gameModeCommands = {
@@ -108,10 +108,10 @@ function generateCS2StartupCommand(config, port, rconPort) {
   }
   
   const gameModeCommand = gameModeCommands[config.gameMode] || gameModeCommands['competitive']
-  const tickrateCommand = `-tickrate ${config.tickrate || 128}`
-  const maxPlayersCommand = `-maxplayers ${config.maxPlayers || 10}`
-  const portCommand = `-port ${port}`
-  const rconCommand = `-rcon_port ${rconPort} -rcon_password ${config.rconPassword || 'changeme'}`
+  const tickrateCommand = `+sv_tickrate ${config.tickrate || 128}`
+  const maxPlayersCommand = `+maxplayers ${config.maxPlayers || 10}`
+  const portCommand = `+port ${port}`
+  const rconCommand = `+rcon_port ${rconPort} +rcon_password ${config.rconPassword || 'changeme'}`
   
   // Map selection - prioritize workshop map if specified
   const mapCommand = config.workshopMapId 
@@ -126,14 +126,11 @@ function generateCS2StartupCommand(config, port, rconPort) {
   
   return [
     baseCommand,
-    '-game cs2',
-    '-console',
-    '-dedicated',
+    gameModeCommand,
     tickrateCommand,
     maxPlayersCommand,
     portCommand,
     rconCommand,
-    gameModeCommand,
     mapCommand,
     steamAccountCommand,
     customArgsCommand
@@ -181,23 +178,14 @@ app.post('/api/servers', authenticate, async (req, res) => {
     
     if (gameType === 'CS2') {
       containerConfig = {
-        Image: 'cs2server/cs2:latest',
+        Image: 'steamcmd/steamcmd:latest',
         name: containerName,
         Env: [
-          'SRCDS_TOKEN=' + (config.steamAccount || ''),
-          'SRCDS_RCON_PASSWORD=' + (config.rconPassword || 'changeme'),
-          'SRCDS_PW=' + (config.serverPassword || ''),
-          'SRCDS_HOSTNAME=' + (name || 'CS2 Server'),
-          'SRCDS_MAXPLAYERS=' + (config.maxPlayers || 10),
-          'SRCDS_STARTMAP=' + (config.map || 'de_dust2'),
-          'SRCDS_GAMEMODE=' + (config.gameMode || 'competitive'),
-          'SRCDS_TICKRATE=' + (config.tickrate || 128),
-          'SRCDS_WORKSHOP_COLLECTION=' + (config.workshopMapId || ''),
-          'SRCDS_ADDITIONAL_ARGS=' + (config.customArgs || '')
+          'STEAMCMD_VALIDATE=1'
         ],
         Cmd: [
           'bash', '-c',
-          generateCS2StartupCommand(config, port, rconPort)
+          `steamcmd +login anonymous +app_update 730 +quit && cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server && ${generateCS2StartupCommand(config, port, rconPort)}`
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},
@@ -902,28 +890,28 @@ app.post('/api/servers/:containerId/command', authenticate, async (req, res) => 
       }
     } else {
       // For other servers or non-game commands, use regular bash execution
-      const exec = await container.exec({
-        Cmd: ['bash', '-c', command],
-        AttachStdout: true,
-        AttachStderr: true
-      })
-      
-      const stream = await exec.start()
-      
+    const exec = await container.exec({
+      Cmd: ['bash', '-c', command],
+      AttachStdout: true,
+      AttachStderr: true
+    })
+    
+    const stream = await exec.start()
+    
       await new Promise((resolve, reject) => {
-        stream.on('data', (chunk) => {
-          output += chunk.toString()
-        })
-        
+    stream.on('data', (chunk) => {
+      output += chunk.toString()
+    })
+    
         stream.on('end', resolve)
         stream.on('error', reject)
       })
     }
     
-    res.json({
+      res.json({
       output: output || `Command "${command}" sent to server`,
-      command: command,
-      containerId: req.params.containerId
+        command: command,
+        containerId: req.params.containerId
     })
   } catch (error) {
     console.error('❌ Error sending command:', error)
