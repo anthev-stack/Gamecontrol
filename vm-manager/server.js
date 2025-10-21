@@ -88,11 +88,12 @@ function releasePort(port) {
 
 // Generate CS2 startup command based on configuration
 function generateCS2StartupCommand(config, port, rconPort) {
-  const baseCommand = './game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon'
+  // For cs2server/cs2 image, use the built-in startup script
+  const baseCommand = '/home/steam/cs2-dedicated/srcds_run'
   
   // Game mode configuration
   const gameModeCommands = {
-    'competitive': '+fox_competition_mode 1 +fox_competition_file "competition/match.json"',
+    'competitive': '+game_type 0 +game_mode 0',
     'casual': '+game_type 0 +game_mode 0',
     'wingman': '+game_type 0 +game_mode 2',
     'weapons_expert': '+game_type 0 +game_mode 1 +sv_cheats 0',
@@ -107,10 +108,10 @@ function generateCS2StartupCommand(config, port, rconPort) {
   }
   
   const gameModeCommand = gameModeCommands[config.gameMode] || gameModeCommands['competitive']
-  const tickrateCommand = `+sv_tickrate ${config.tickrate || 128}`
-  const maxPlayersCommand = `+maxplayers ${config.maxPlayers || 10}`
-  const portCommand = `+port ${port}`
-  const rconCommand = `+rcon_port ${rconPort} +rcon_password ${config.rconPassword || 'changeme'}`
+  const tickrateCommand = `-tickrate ${config.tickrate || 128}`
+  const maxPlayersCommand = `-maxplayers ${config.maxPlayers || 10}`
+  const portCommand = `-port ${port}`
+  const rconCommand = `-rcon_port ${rconPort} -rcon_password ${config.rconPassword || 'changeme'}`
   
   // Map selection - prioritize workshop map if specified
   const mapCommand = config.workshopMapId 
@@ -125,11 +126,14 @@ function generateCS2StartupCommand(config, port, rconPort) {
   
   return [
     baseCommand,
-    gameModeCommand,
+    '-game cs2',
+    '-console',
+    '-dedicated',
     tickrateCommand,
     maxPlayersCommand,
     portCommand,
     rconCommand,
+    gameModeCommand,
     mapCommand,
     steamAccountCommand,
     customArgsCommand
@@ -177,14 +181,23 @@ app.post('/api/servers', authenticate, async (req, res) => {
     
     if (gameType === 'CS2') {
       containerConfig = {
-        Image: 'steamcmd/steamcmd:latest',
+        Image: 'cs2server/cs2:latest',
         name: containerName,
         Env: [
-          'STEAMCMD_VALIDATE=1'
+          'SRCDS_TOKEN=' + (config.steamAccount || ''),
+          'SRCDS_RCON_PASSWORD=' + (config.rconPassword || 'changeme'),
+          'SRCDS_PW=' + (config.serverPassword || ''),
+          'SRCDS_HOSTNAME=' + (name || 'CS2 Server'),
+          'SRCDS_MAXPLAYERS=' + (config.maxPlayers || 10),
+          'SRCDS_STARTMAP=' + (config.map || 'de_dust2'),
+          'SRCDS_GAMEMODE=' + (config.gameMode || 'competitive'),
+          'SRCDS_TICKRATE=' + (config.tickrate || 128),
+          'SRCDS_WORKSHOP_COLLECTION=' + (config.workshopMapId || ''),
+          'SRCDS_ADDITIONAL_ARGS=' + (config.customArgs || '')
         ],
         Cmd: [
           'bash', '-c',
-          `steamcmd +login anonymous +app_update 730 +quit && cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server && ${generateCS2StartupCommand(config, port, rconPort)}`
+          generateCS2StartupCommand(config, port, rconPort)
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},
