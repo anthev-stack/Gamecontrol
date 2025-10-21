@@ -103,6 +103,11 @@ function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger
           }
         } catch (error) {
           console.error('Error parsing console data:', error)
+          // If we get JSON parsing errors, disable SSE and force polling
+          console.log('🔄 JSON parsing errors detected, switching to polling...')
+          eventSource.close()
+          eventSourceRef.current = null
+          setupPolling()
         }
       }
 

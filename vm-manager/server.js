@@ -946,13 +946,29 @@ app.get('/api/servers/:containerId/console', authenticate, async (req, res) => {
     logs.on('data', (chunk) => {
       const logLine = chunk.toString().trim()
       if (logLine) {
-        res.write(`data: {"type":"log","message":"${logLine.replace(/"/g, '\\"')}"}\n\n`)
+        // Properly escape JSON string - handle quotes, backslashes, and control characters
+        const escapedMessage = logLine
+          .replace(/\\/g, '\\\\')  // Escape backslashes first
+          .replace(/"/g, '\\"')    // Escape quotes
+          .replace(/\n/g, '\\n')   // Escape newlines
+          .replace(/\r/g, '\\r')   // Escape carriage returns
+          .replace(/\t/g, '\\t')   // Escape tabs
+          .replace(/[\x00-\x1F\x7F]/g, '') // Remove other control characters
+        
+        res.write(`data: {"type":"log","message":"${escapedMessage}"}\n\n`)
       }
     })
     
     logs.on('error', (error) => {
       console.error('❌ Error in log stream:', error)
-      res.write(`data: {"type":"error","message":"${error.message}"}\n\n`)
+      const escapedError = error.message
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\r')
+        .replace(/\t/g, '\\t')
+        .replace(/[\x00-\x1F\x7F]/g, '')
+      res.write(`data: {"type":"error","message":"${escapedError}"}\n\n`)
     })
     
     // Handle client disconnect
