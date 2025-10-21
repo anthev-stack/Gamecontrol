@@ -661,16 +661,29 @@ app.post('/api/servers/:containerId/command', authenticate, async (req, res) => 
     
     let output = ''
     
-    // Check if this is a CS2 server and command looks like a game command
-    if (imageName.includes('steamcmd') && (command.startsWith('sv_') || command.startsWith('mp_') || command.startsWith('bot_') || command.startsWith('rcon_'))) {
-      // For CS2 servers, try to send command to the running game process
-      console.log(`🎮 Sending CS2 command: ${command}`)
+    // Check if this is a game server and command looks like a game command
+    const isCS2Server = imageName.includes('steamcmd')
+    const isMinecraftServer = imageName.includes('minecraft-server')
+    const isCS2Command = command.startsWith('sv_') || command.startsWith('mp_') || command.startsWith('bot_') || command.startsWith('rcon_')
+    const isMinecraftCommand = command.startsWith('/') || command.startsWith('say ') || command.startsWith('tell ') || command.startsWith('give ') || command.startsWith('tp ') || command.startsWith('gamemode ')
+    
+    if ((isCS2Server && isCS2Command) || (isMinecraftServer && isMinecraftCommand)) {
+      // For game servers, try to send command to the running game process
+      const gameType = isCS2Server ? 'CS2' : 'Minecraft'
+      console.log(`🎮 Sending ${gameType} command: ${command}`)
       
       try {
-        // Try to send command to the CS2 process via its stdin
+        let processCmd
+        if (isCS2Server) {
+          // CS2: Send to srcds_linux process
+          processCmd = `echo "${command}" > /proc/$(pgrep -f "srcds_linux")/fd/0 2>/dev/null || echo "Command sent to CS2 server (check logs for output)"`
+        } else {
+          // Minecraft: Send to java process (Minecraft server)
+          processCmd = `echo "${command}" > /proc/$(pgrep -f "java.*minecraft")/fd/0 2>/dev/null || echo "Command sent to Minecraft server (check logs for output)"`
+        }
+        
         const exec = await container.exec({
-          Cmd: ['bash', '-c', `echo "${command}" > /proc/$(pgrep -f "srcds_linux")/fd/0 2>/dev/null || echo "Command sent to CS2 server (check logs for output)"`
-          ],
+          Cmd: ['bash', '-c', processCmd],
           AttachStdout: true,
           AttachStderr: true
         })
@@ -687,11 +700,11 @@ app.post('/api/servers/:containerId/command', authenticate, async (req, res) => 
         })
         
         if (!output.trim()) {
-          output = `Command "${command}" sent to CS2 server. Check the console logs to see the result.`
+          output = `Command "${command}" sent to ${gameType} server. Check the console logs to see the result.`
         }
       } catch (error) {
-        console.error('Error sending CS2 command:', error)
-        output = `Command "${command}" sent to CS2 server. Check the console logs to see the result.`
+        console.error(`Error sending ${gameType} command:`, error)
+        output = `Command "${command}" sent to ${gameType} server. Check the console logs to see the result.`
       }
     } else {
       // For other servers or non-game commands, use regular bash execution
