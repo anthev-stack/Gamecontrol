@@ -183,7 +183,19 @@ app.post('/api/servers', authenticate, async (req, res) => {
         name: containerName,
         Cmd: [
           'bash', '-c',
-          `echo "Downloading CS2 server files..."; steamcmd +login anonymous +app_update 730 +quit; echo "CS2 download complete. Container will exit."; exit 0`
+          `echo "Starting CS2 download process...";
+           timeout 300 steamcmd +login anonymous +app_update 730 +quit || {
+             echo "SteamCMD timed out, force killing...";
+             pkill -f steamcmd || true;
+             sleep 2;
+             echo "Retrying with force kill approach...";
+             steamcmd +login anonymous +app_update 730 +quit || {
+               echo "Download failed, exiting...";
+               exit 1;
+             };
+           };
+           echo "CS2 download complete. Container will exit.";
+           exit 0`
         ],
         HostConfig: {
           Memory: (config.allocatedRam || 2048) * 1024 * 1024,
@@ -407,10 +419,10 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
       res.json({ message: 'CS2 game server started', status: 'running' })
     } else {
       // For other games, start the existing container
-      const container = docker.getContainer(req.params.containerId)
-      await container.start()
-      console.log(`✅ Container started`)
-      res.json({ message: 'Server started', status: 'running' })
+    const container = docker.getContainer(req.params.containerId)
+    await container.start()
+    console.log(`✅ Container started`)
+    res.json({ message: 'Server started', status: 'running' })
     }
   } catch (error) {
     console.error('❌ Error starting server:', error)
