@@ -24,7 +24,7 @@ interface ServerDetailPageProps {
 }
 
 // Console Tab Component
-function ConsoleTab({ server }: { server: Server }) {
+function ConsoleTab({ server, refreshTrigger }: { server: Server, refreshTrigger?: number }) {
   const [logs, setLogs] = useState<string[]>([])
   const [command, setCommand] = useState('')
   const [isConnected, setIsConnected] = useState(false)
@@ -79,6 +79,15 @@ function ConsoleTab({ server }: { server: Server }) {
       eventSourceRef.current = null
     }
   }, [server.containerId, server.id])
+
+  // Listen for refresh trigger (e.g., after server restart)
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      console.log('🔄 Refreshing console logs after server action...')
+      setLogs([]) // Clear existing logs
+      loadLogs() // Reload fresh logs
+    }
+  }, [refreshTrigger])
 
   const loadLogs = async () => {
     try {
@@ -199,6 +208,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isActionLoading, setIsActionLoading] = useState(false)
+  const [consoleRefreshTrigger, setConsoleRefreshTrigger] = useState(0)
   const router = useRouter()
 
   const serverId = params.serverId
@@ -261,6 +271,14 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
       
       // Refresh stats after action
       setTimeout(fetchServerStats, 2000)
+      
+      // If restarting, refresh console logs to show restart process
+      if (action === 'restart') {
+        setTimeout(() => {
+          console.log('🔄 Triggering console refresh after restart...')
+          setConsoleRefreshTrigger(prev => prev + 1)
+        }, 2000)
+      }
     } catch (err) {
       console.error(`❌ Error ${action}ing server:`, err)
       setError(err instanceof Error ? err.message : 'Unknown error')
@@ -1473,7 +1491,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         )}
 
         {activeTab === 'console' && (
-          <ConsoleTab server={server} />
+          <ConsoleTab server={server} refreshTrigger={consoleRefreshTrigger} />
         )}
 
         {activeTab === 'updates' && (
