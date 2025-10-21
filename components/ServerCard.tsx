@@ -4,6 +4,7 @@ import { Server, GameType, ServerStatus } from '@prisma/client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatRam } from '@/lib/ram-calculator'
+import { Target, Pickaxe, Wrench, Folder } from 'lucide-react'
 
 interface ServerCardProps {
   server: Server
@@ -16,10 +17,10 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  const gameIcons: Record<GameType, string> = {
-    CS2: '🎯',
-    MINECRAFT: '⛏️',
-    RUST: '🔧',
+  const gameIcons: Record<GameType, React.ComponentType<{ className?: string }>> = {
+    CS2: Target,
+    MINECRAFT: Pickaxe,
+    RUST: Wrench,
   }
 
   const statusColors: Record<ServerStatus, string> = {
@@ -124,11 +125,16 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg shadow-xl overflow-hidden border border-gray-700 hover:border-gray-600 transition-colors">
+    <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden border border-gray-700/50 hover:border-gray-600/70 transition-colors">
       <div className="p-6">
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-3">
-            <span className="text-4xl">{gameIcons[server.game]}</span>
+            <div className="text-blue-400">
+              {(() => {
+                const IconComponent = gameIcons[server.game]
+                return <IconComponent className="w-8 h-8" />
+              })()}
+            </div>
             <div>
               <h3 className="text-xl font-bold text-white">{server.name}</h3>
               <span className="text-sm text-gray-400">{server.game}</span>
@@ -205,8 +211,11 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
         {server.ftpPath && (
           <div className="mb-3 pt-3 border-t border-gray-700">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-gray-400">📁 FTP Path:</span>
-              <code className="text-blue-400 bg-gray-900 px-2 py-1 rounded">
+              <div className="flex items-center gap-1 text-gray-400">
+                <Folder className="w-3 h-3" />
+                FTP Path:
+              </div>
+              <code className="text-blue-400 bg-gray-800/80 px-2 py-1 rounded border border-gray-600/50">
                 /{server.ftpPath}
               </code>
             </div>

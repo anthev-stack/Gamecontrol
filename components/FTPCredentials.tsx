@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { CheckCircle, AlertTriangle, RotateCcw, Lightbulb, Folder, FolderOpen } from 'lucide-react'
 
 interface FTPInfo {
   enabled: boolean
@@ -126,7 +127,7 @@ export default function FTPCredentials() {
 
   if (loading) {
     return (
-      <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+      <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-gray-700/50">
         <p className="text-gray-400">Loading FTP information...</p>
       </div>
     )
@@ -134,9 +135,11 @@ export default function FTPCredentials() {
 
   if (!ftpInfo?.enabled || !ftpInfo?.username) {
     return (
-      <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+      <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-gray-700/50">
         <div className="flex items-start gap-4">
-          <div className="text-4xl">📁</div>
+          <div className="text-blue-400">
+            <Folder className="w-10 h-10" />
+          </div>
           <div className="flex-1">
             <h3 className="text-xl font-bold text-white mb-2">FTP File Access</h3>
             <p className="text-gray-400 mb-4">
@@ -154,11 +157,14 @@ export default function FTPCredentials() {
 
         {showPassword && newPassword && (
           <div className="mt-4 p-4 bg-green-500/10 border border-green-500 rounded-lg">
-            <h4 className="text-green-400 font-semibold mb-2">✅ FTP Account Created!</h4>
+            <h4 className="text-green-400 font-semibold mb-2 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              FTP Account Created!
+            </h4>
             <p className="text-sm text-gray-300 mb-3">
               <strong>Save your password now!</strong> It won't be shown again.
             </p>
-            <div className="bg-gray-900 p-3 rounded font-mono text-sm text-green-400">
+            <div className="bg-gray-800/80 p-3 rounded font-mono text-sm text-green-400 border border-gray-600/50">
               Password: {newPassword}
             </div>
             <button
@@ -174,10 +180,12 @@ export default function FTPCredentials() {
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+    <div className="bg-gray-900/60 backdrop-blur-sm rounded-lg p-6 shadow-lg border border-gray-700/50">
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-3">
-          <div className="text-4xl">📁</div>
+          <div className="text-blue-400">
+            <Folder className="w-10 h-10" />
+          </div>
           <div>
             <h3 className="text-xl font-bold text-white">FTP File Access</h3>
             <p className="text-sm text-gray-400">Manage your server files</p>
@@ -190,11 +198,14 @@ export default function FTPCredentials() {
 
       {showPassword && newPassword && (
         <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500 rounded-lg">
-          <h4 className="text-yellow-400 font-semibold mb-2">⚠️ New Password Generated!</h4>
+          <h4 className="text-yellow-400 font-semibold mb-2 flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5" />
+            New Password Generated!
+          </h4>
           <p className="text-sm text-gray-300 mb-3">
             Your FTP password has been reset. <strong>Save it now!</strong>
           </p>
-          <div className="bg-gray-900 p-3 rounded font-mono text-sm text-yellow-400">
+          <div className="bg-gray-800/80 p-3 rounded font-mono text-sm text-yellow-400 border border-gray-600/50">
             Password: {newPassword}
           </div>
           <button
@@ -210,12 +221,12 @@ export default function FTPCredentials() {
         <div>
           <label className="block text-xs text-gray-400 mb-1">FTP Host</label>
           <div className="flex items-center gap-2">
-            <div className="flex-1 bg-gray-900 px-4 py-2 rounded font-mono text-sm text-gray-200">
+            <div className="flex-1 bg-gray-800/80 px-4 py-2 rounded font-mono text-sm text-gray-200 border border-gray-600/50">
               {ftpInfo.host}
             </div>
             <button
               onClick={() => copyToClipboard(ftpInfo.host!, 'Host')}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
               title="Copy to clipboard"
             >
               📋
@@ -226,12 +237,12 @@ export default function FTPCredentials() {
         <div>
           <label className="block text-xs text-gray-400 mb-1">Port</label>
           <div className="flex items-center gap-2">
-            <div className="flex-1 bg-gray-900 px-4 py-2 rounded font-mono text-sm text-gray-200">
+            <div className="flex-1 bg-gray-800/80 px-4 py-2 rounded font-mono text-sm text-gray-200 border border-gray-600/50">
               {ftpInfo.port}
             </div>
             <button
               onClick={() => copyToClipboard(ftpInfo.port!.toString(), 'Port')}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
               title="Copy to clipboard"
             >
               📋
@@ -242,12 +253,12 @@ export default function FTPCredentials() {
         <div>
           <label className="block text-xs text-gray-400 mb-1">Username</label>
           <div className="flex items-center gap-2">
-            <div className="flex-1 bg-gray-900 px-4 py-2 rounded font-mono text-sm text-gray-200">
+            <div className="flex-1 bg-gray-800/80 px-4 py-2 rounded font-mono text-sm text-gray-200 border border-gray-600/50">
               {ftpInfo.username}
             </div>
             <button
               onClick={() => copyToClipboard(ftpInfo.username!, 'Username')}
-              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
               title="Copy to clipboard"
             >
               📋
@@ -258,7 +269,7 @@ export default function FTPCredentials() {
         <div>
           <label className="block text-xs text-gray-400 mb-1">Password</label>
           <div className="flex items-center gap-2">
-            <div className="flex-1 bg-gray-900 px-4 py-2 rounded font-mono text-sm text-gray-200">
+            <div className="flex-1 bg-gray-800/80 px-4 py-2 rounded font-mono text-sm text-gray-200 border border-gray-600/50">
               ••••••••••••••••
             </div>
             <button
@@ -267,16 +278,19 @@ export default function FTPCredentials() {
               className="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-sm disabled:opacity-50"
               title="Reset password"
             >
-              🔄
+              <RotateCcw className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
       <div className="bg-blue-500/10 border border-blue-500 rounded-lg p-4 mb-4">
-        <h4 className="text-blue-300 font-semibold mb-2">📂 Your Servers</h4>
+        <h4 className="text-blue-300 font-semibold mb-2 flex items-center gap-2">
+          <FolderOpen className="w-5 h-5" />
+          Your Servers
+        </h4>
         <p className="text-sm text-gray-300 mb-2">
-          Access your server files at: <code className="bg-gray-900 px-2 py-1 rounded text-blue-400">/servers/</code>
+          Access your server files at: <code className="bg-gray-800/80 px-2 py-1 rounded text-blue-400 border border-gray-600/50">/servers/</code>
         </p>
         {ftpInfo.servers && ftpInfo.servers.length > 0 ? (
           <div className="text-sm text-gray-400">
@@ -319,7 +333,10 @@ export default function FTPCredentials() {
       </div>
 
       <div className="mt-4 text-xs text-gray-500">
-        <p>💡 <strong>Recommended FTP Clients:</strong></p>
+        <div className="flex items-center gap-2 mb-2">
+          <Lightbulb className="w-4 h-4" />
+          <strong>Recommended FTP Clients:</strong>
+        </div>
         <ul className="list-disc list-inside mt-1 space-y-1">
           <li><a href="https://filezilla-project.org/" target="_blank" className="text-blue-400 hover:text-blue-300">FileZilla</a> (Windows, Mac, Linux)</li>
           <li><a href="https://cyberduck.io/" target="_blank" className="text-blue-400 hover:text-blue-300">Cyberduck</a> (Mac, Windows)</li>

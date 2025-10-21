@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Server } from '@prisma/client'
+import { BarChart3, Terminal, RotateCcw, Clock, Settings, Copy, AlertTriangle, CheckCircle, XCircle, Lightbulb } from 'lucide-react'
 
 interface ServerStats {
   status: 'online' | 'offline' | 'error'
@@ -125,7 +126,7 @@ function ConsoleTab({ server }: { server: Server }) {
   }
 
   return (
-    <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+    <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium text-white">Web Console</h3>
         <div className="flex items-center gap-4">
@@ -137,14 +138,14 @@ function ConsoleTab({ server }: { server: Server }) {
           </div>
           <button
             onClick={clearLogs}
-            className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
+            className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
           >
             Clear
           </button>
         </div>
       </div>
 
-      <div className="bg-black text-green-400 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto mb-4">
+      <div className="bg-black text-green-400 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto mb-4 border border-gray-600/50">
         {logs.length === 0 ? (
           <div className="text-gray-400">Loading console output...</div>
         ) : (
@@ -163,25 +164,28 @@ function ConsoleTab({ server }: { server: Server }) {
           value={command}
           onChange={(e) => setCommand(e.target.value)}
           placeholder="Enter command..."
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           disabled={!server.containerId || isLoading}
         />
         <button
           type="submit"
           disabled={!command.trim() || !server.containerId || isLoading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isLoading ? 'Sending...' : 'Send'}
         </button>
       </form>
 
       <div className="mt-2 text-xs text-gray-400">
-        <p>💡 <strong>Tips:</strong></p>
+        <div className="flex items-center gap-1 mb-2">
+          <Lightbulb className="w-3 h-3" />
+          <strong>Tips:</strong>
+        </div>
         <ul className="list-disc list-inside ml-4 space-y-1">
-          <li>Use <code className="bg-gray-100 px-1 rounded">status</code> to check server status</li>
-          <li>Use <code className="bg-gray-100 px-1 rounded">ls -la</code> to list files</li>
-          <li>Use <code className="bg-gray-100 px-1 rounded">ps aux</code> to see running processes</li>
-          <li>For CS2: Use <code className="bg-gray-100 px-1 rounded">./game/bin/linuxsteamrt64/cs2 -help</code></li>
+          <li>Use <code className="bg-gray-700 px-1 rounded text-gray-300">status</code> to check server status</li>
+          <li>Use <code className="bg-gray-700 px-1 rounded text-gray-300">ls -la</code> to list files</li>
+          <li>Use <code className="bg-gray-700 px-1 rounded text-gray-300">ps aux</code> to see running processes</li>
+          <li>For CS2: Use <code className="bg-gray-700 px-1 rounded text-gray-300">./game/bin/linuxsteamrt64/cs2 -help</code></li>
         </ul>
       </div>
     </div>
@@ -312,7 +316,10 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-400 text-xl mb-4">⚠️ Error</div>
+          <div className="flex items-center justify-center gap-2 text-red-400 text-xl mb-4">
+            <AlertTriangle className="w-5 h-5" />
+            Error
+          </div>
           <p className="text-white mb-4">{error || 'Server not found'}</p>
           <button
             onClick={() => router.push('/dashboard')}
@@ -425,12 +432,12 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
     return (
       <div className="space-y-6">
         {/* Manual Update */}
-        <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
-          <h3 className="text-lg font-semibold mb-4">Manual Steam Update</h3>
+        <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50">
+          <h3 className="text-lg font-semibold mb-4 text-white">Manual Steam Update</h3>
           
-          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-blue-900/30 rounded-lg border border-blue-700/50">
             <div>
-              <h4 className="font-medium">Update Game Server</h4>
+              <h4 className="font-medium text-white">Update Game Server</h4>
               <p className="text-sm text-gray-300">Download and install the latest game updates immediately</p>
             </div>
             <button
@@ -443,7 +450,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
           </div>
 
           {updateLogs.length > 0 && (
-            <div className="mt-4 bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm max-h-64 overflow-y-auto">
+            <div className="mt-4 bg-black text-green-400 p-4 rounded-lg font-mono text-sm max-h-64 overflow-y-auto border border-gray-600/50">
               {updateLogs.map((log, index) => (
                 <div key={index}>{log}</div>
               ))}
@@ -452,7 +459,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         </div>
 
         {/* Scheduled Tasks */}
-        <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+        <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Scheduled Tasks</h3>
             <button
@@ -842,7 +849,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
     return (
       <div className="space-y-6">
         {/* Startup Configuration */}
-        <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+        <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50">
           <h3 className="text-lg font-medium text-white mb-4">Startup Configuration</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1032,23 +1039,23 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         </div>
 
         {/* Danger Zone */}
-        <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+        <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50">
           <h3 className="text-lg font-medium text-white mb-4">Danger Zone</h3>
-          <div className="p-4 bg-red-50 rounded-lg">
-            <h4 className="font-medium text-red-900">Dangerous Actions</h4>
-            <p className="text-sm text-red-700 mb-4">
+          <div className="p-4 bg-red-900/30 rounded-lg border border-red-700/50">
+            <h4 className="font-medium text-red-400">Dangerous Actions</h4>
+            <p className="text-sm text-red-300 mb-4">
               These actions are irreversible and will affect your server.
             </p>
             <div className="space-x-4">
               <button
                 onClick={handleReinstall}
-                className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700"
+                className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
               >
                 Reinstall Server
               </button>
               <button
                 onClick={handleDelete}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
               >
                 Delete Server
               </button>
@@ -1063,23 +1070,23 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
   const isSteamGame = server?.game === 'CS2' || server?.game === 'RUST'
   
   const tabs = [
-    { id: 'overview', name: 'Overview', icon: '📊' },
-    { id: 'console', name: 'Web Console', icon: '💻' },
-    ...(isSteamGame ? [{ id: 'updates', name: 'Steam Updates', icon: '🔄' }] : []),
-    { id: 'tasks', name: 'Scheduled Tasks', icon: '⏰' },
-    { id: 'settings', name: 'Settings', icon: '⚙️' }
+    { id: 'overview', name: 'Overview', icon: BarChart3 },
+    { id: 'console', name: 'Web Console', icon: Terminal },
+    ...(isSteamGame ? [{ id: 'updates', name: 'Steam Updates', icon: RotateCcw }] : []),
+    { id: 'tasks', name: 'Scheduled Tasks', icon: Clock },
+    { id: 'settings', name: 'Settings', icon: Settings }
   ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
       {/* Header */}
-      <div className="bg-gray-800 shadow-sm border-b border-gray-700">
+      <div className="bg-gray-900/80 backdrop-blur-sm shadow-sm border-b border-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="mr-4 text-gray-300 hover:text-white"
+                className="mr-4 text-gray-300 hover:text-white transition-colors"
               >
                 ← Back
               </button>
@@ -1098,20 +1105,20 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
               <button
                 onClick={() => handleServerAction('start')}
                 disabled={stats?.status === 'online'}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Start
               </button>
               <button
                 onClick={() => handleServerAction('stop')}
                 disabled={stats?.status === 'offline'}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Stop
               </button>
               <button
                 onClick={() => handleServerAction('restart')}
-                className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700"
+                className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
               >
                 Restart
               </button>
@@ -1121,23 +1128,26 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
       </div>
 
       {/* Tabs */}
-      <div className="bg-gray-800 border-b">
+      <div className="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? 'border-blue-400 text-blue-400'
-                    : 'border-transparent text-gray-400 hover:text-white hover:border-gray-500'
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.name}
-              </button>
-            ))}
+            {tabs.map((tab) => {
+              const IconComponent = tab.icon
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === tab.id
+                      ? 'border-blue-400 text-blue-400'
+                      : 'border-transparent text-gray-400 hover:text-white hover:border-gray-500'
+                  }`}
+                >
+                  <IconComponent className="w-4 h-4 mr-2 inline" />
+                  {tab.name}
+                </button>
+              )
+            })}
           </nav>
         </div>
       </div>
@@ -1148,102 +1158,297 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
           <div className="space-y-6">
             {/* Server Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+              <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50">
                 <h3 className="text-lg font-medium text-white mb-2">Players</h3>
-                <div className="text-3xl font-bold text-blue-600">
+                <div className="text-3xl font-bold text-blue-400">
                   {stats?.playerCount || 0} / {stats?.maxPlayers || server.maxPlayers}
                 </div>
               </div>
               
-              <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+              <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50">
                 <h3 className="text-lg font-medium text-white mb-2">CPU Usage</h3>
-                <div className="text-3xl font-bold text-green-600">
+                <div className="text-3xl font-bold text-green-400">
                   {stats?.cpuUsage || 0}%
                 </div>
               </div>
               
-              <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+              <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50">
                 <h3 className="text-lg font-medium text-white mb-2">Memory</h3>
-                <div className="text-3xl font-bold text-purple-600">
+                <div className="text-3xl font-bold text-purple-400">
                   {stats?.memoryUsed ? `${Math.round(stats.memoryUsed / 1024 / 1024)}MB` : '0MB'}
                 </div>
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-gray-300">
                   of {Math.round(server.allocatedRam / 1024)}MB
                 </div>
               </div>
               
-              <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+              <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50">
                 <h3 className="text-lg font-medium text-white mb-2">Uptime</h3>
-                <div className="text-3xl font-bold text-indigo-600">
+                <div className="text-3xl font-bold text-indigo-400">
                   {stats?.uptime || 'Unknown'}
                 </div>
               </div>
             </div>
 
             {/* Connection Info */}
-            <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+            <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50">
               <h3 className="text-lg font-medium text-white mb-4">Connection Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Server Address</label>
-                  <div className="mt-1 p-3 bg-gray-50 rounded-lg font-mono text-sm">
-                    {server.host || 'localhost'}:{server.port}
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Server Address</label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 p-3 bg-gray-800/80 rounded-lg font-mono text-sm text-gray-100 border border-gray-600/50">
+                      {server.host || 'localhost'}:{server.port}
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(`${server.host || 'localhost'}:${server.port}`)}
+                      className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">RCON Port</label>
-                  <div className="mt-1 p-3 bg-gray-50 rounded-lg font-mono text-sm">
-                    {server.host || 'localhost'}:{server.rconPort}
+                  <label className="block text-sm font-medium text-gray-300 mb-2">RCON Port</label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 p-3 bg-gray-800/80 rounded-lg font-mono text-sm text-gray-100 border border-gray-600/50">
+                      {server.host || 'localhost'}:{server.rconPort}
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(`${server.host || 'localhost'}:${server.rconPort}`)}
+                      className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">RCON Password</label>
-                  <div className="mt-1 p-3 bg-gray-50 rounded-lg font-mono text-sm">
-                    {server.rconPassword || 'changeme'}
+                  <label className="block text-sm font-medium text-gray-300 mb-2">RCON Password</label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 p-3 bg-gray-800/80 rounded-lg font-mono text-sm text-gray-100 border border-gray-600/50">
+                      {server.rconPassword || 'changeme'}
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(server.rconPassword || 'changeme')}
+                      className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">FTP Path</label>
-                  <div className="mt-1 p-3 bg-gray-50 rounded-lg font-mono text-sm">
-                    {server.ftpPath || 'Not configured'}
+                  <label className="block text-sm font-medium text-gray-300 mb-2">FTP Path</label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 p-3 bg-gray-800/80 rounded-lg font-mono text-sm text-gray-100 border border-gray-600/50">
+                      {server.ftpPath || 'Not configured'}
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(server.ftpPath || 'Not configured')}
+                      className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Server Configuration */}
-            <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+            <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50">
               <h3 className="text-lg font-medium text-white mb-4">Server Configuration</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Game Type</label>
-                  <div className="mt-1 text-sm text-white">{server.game}</div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Game Type</label>
+                  <div className="text-sm text-white">{server.game}</div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Max Players</label>
-                  <div className="mt-1 text-sm text-white">{server.maxPlayers}</div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Max Players</label>
+                  <div className="text-sm text-white">{server.maxPlayers}</div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Allocated RAM</label>
-                  <div className="mt-1 text-sm text-white">{server.allocatedRam}MB</div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Allocated RAM</label>
+                  <div className="text-sm text-white">{server.allocatedRam}MB</div>
                 </div>
                 {server.game === 'CS2' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Tickrate</label>
-                      <div className="mt-1 text-sm text-white">{server.tickrate || 128}</div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Tickrate</label>
+                      <div className="text-sm text-white">{server.tickrate || 128}</div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Map</label>
-                      <div className="mt-1 text-sm text-white">{server.map || 'de_dust2'}</div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Map</label>
+                      <div className="text-sm text-white">{server.map || 'de_dust2'}</div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Game Mode</label>
-                      <div className="mt-1 text-sm text-white">{server.gameMode || 'competitive'}</div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Game Mode</label>
+                      <div className="text-sm text-white">{server.gameMode || 'competitive'}</div>
                     </div>
                   </>
                 )}
               </div>
+              
+              {/* Generated Startup Command for CS2 */}
+              {server.game === 'CS2' && (
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Generated Startup Command</label>
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 bg-gray-800/80 p-3 rounded-lg font-mono text-sm text-green-400 border border-gray-600/50 overflow-x-auto">
+                      {(() => {
+                        // CS2 Game Mode configurations with their command lines
+                        const cs2GameModes = [
+                          {
+                            id: 'competitive',
+                            name: 'Competitive',
+                            commandLine: '+fox_competition_mode 1 +fox_competition_file "competition/match.json"'
+                          },
+                          {
+                            id: 'casual',
+                            name: 'Casual',
+                            commandLine: '+game_type 0 +game_mode 0'
+                          },
+                          {
+                            id: 'wingman',
+                            name: 'Wingman',
+                            commandLine: '+game_type 0 +game_mode 2'
+                          },
+                          {
+                            id: 'weapons_expert',
+                            name: 'Weapons Expert',
+                            commandLine: '+game_type 0 +game_mode 1 +sv_cheats 0'
+                          },
+                          {
+                            id: 'arms_race',
+                            name: 'Arms Race',
+                            commandLine: '+game_type 1 +game_mode 0'
+                          },
+                          {
+                            id: 'demolition',
+                            name: 'Demolition',
+                            commandLine: '+game_type 1 +game_mode 1'
+                          },
+                          {
+                            id: 'deathmatch',
+                            name: 'Deathmatch',
+                            commandLine: '+game_type 1 +game_mode 2'
+                          },
+                          {
+                            id: 'custom',
+                            name: 'Custom',
+                            commandLine: '+game_type 0 +game_mode 0'
+                          },
+                          {
+                            id: 'guardian',
+                            name: 'Guardian',
+                            commandLine: '+game_type 1 +game_mode 3'
+                          },
+                          {
+                            id: 'coop',
+                            name: 'Co-op Strike',
+                            commandLine: '+game_type 1 +game_mode 4'
+                          },
+                          {
+                            id: 'wargames',
+                            name: 'Wargames',
+                            commandLine: '+game_type 1 +game_mode 5'
+                          },
+                          {
+                            id: 'dangerzone',
+                            name: 'Danger Zone',
+                            commandLine: '+game_type 6 +game_mode 0'
+                          }
+                        ]
+
+                        const selectedGameMode = cs2GameModes.find(mode => mode.id === (server.gameMode || 'competitive'))
+                        const baseCommand = `./game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon`
+                        
+                        const gameModeCommand = selectedGameMode ? selectedGameMode.commandLine : ''
+                        const tickrateCommand = `+sv_tickrate ${server.tickrate || 128}`
+                        const maxPlayersCommand = `+maxplayers ${server.maxPlayers || 10}`
+                        const portCommand = `+port ${server.port}`
+                        const rconCommand = `+rcon_port ${server.rconPort} +rcon_password ${server.rconPassword || 'changeme'}`
+                        
+                        // Map selection - prioritize workshop map if specified
+                        const mapCommand = server.workshopMapId 
+                          ? `+host_workshop_collection ${server.workshopMapId}` 
+                          : `+map ${server.map || 'de_dust2'}`
+                        
+                        // Steam account command
+                        const steamAccountCommand = server.steamAccount ? `+sv_setsteamaccount ${server.steamAccount}` : ''
+                        
+                        // Custom arguments
+                        const customArgsCommand = server.customArgs || ''
+                        
+                        return [
+                          baseCommand,
+                          gameModeCommand,
+                          tickrateCommand,
+                          maxPlayersCommand,
+                          portCommand,
+                          rconCommand,
+                          mapCommand,
+                          steamAccountCommand,
+                          customArgsCommand
+                        ].filter(Boolean).join(' ')
+                      })()}
+                    </div>
+                    <button
+                      onClick={() => {
+                        const command = (() => {
+                          const cs2GameModes = [
+                            { id: 'competitive', commandLine: '+fox_competition_mode 1 +fox_competition_file "competition/match.json"' },
+                            { id: 'casual', commandLine: '+game_type 0 +game_mode 0' },
+                            { id: 'wingman', commandLine: '+game_type 0 +game_mode 2' },
+                            { id: 'weapons_expert', commandLine: '+game_type 0 +game_mode 1 +sv_cheats 0' },
+                            { id: 'arms_race', commandLine: '+game_type 1 +game_mode 0' },
+                            { id: 'demolition', commandLine: '+game_type 1 +game_mode 1' },
+                            { id: 'deathmatch', commandLine: '+game_type 1 +game_mode 2' },
+                            { id: 'custom', commandLine: '+game_type 0 +game_mode 0' },
+                            { id: 'guardian', commandLine: '+game_type 1 +game_mode 3' },
+                            { id: 'coop', commandLine: '+game_type 1 +game_mode 4' },
+                            { id: 'wargames', commandLine: '+game_type 1 +game_mode 5' },
+                            { id: 'dangerzone', commandLine: '+game_type 6 +game_mode 0' }
+                          ]
+                          const selectedGameMode = cs2GameModes.find(mode => mode.id === (server.gameMode || 'competitive'))
+                          const baseCommand = `./game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon`
+                          const gameModeCommand = selectedGameMode ? selectedGameMode.commandLine : ''
+                          const tickrateCommand = `+sv_tickrate ${server.tickrate || 128}`
+                          const maxPlayersCommand = `+maxplayers ${server.maxPlayers || 10}`
+                          const portCommand = `+port ${server.port}`
+                          const rconCommand = `+rcon_port ${server.rconPort} +rcon_password ${server.rconPassword || 'changeme'}`
+                          const mapCommand = server.workshopMapId 
+                            ? `+host_workshop_collection ${server.workshopMapId}` 
+                            : `+map ${server.map || 'de_dust2'}`
+                          const steamAccountCommand = server.steamAccount ? `+sv_setsteamaccount ${server.steamAccount}` : ''
+                          const customArgsCommand = server.customArgs || ''
+                          return [
+                            baseCommand,
+                            gameModeCommand,
+                            tickrateCommand,
+                            maxPlayersCommand,
+                            portCommand,
+                            rconCommand,
+                            mapCommand,
+                            steamAccountCommand,
+                            customArgsCommand
+                          ].filter(Boolean).join(' ')
+                        })()
+                        navigator.clipboard.writeText(command)
+                      }}
+                      className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      title="Copy startup command to clipboard"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    This command is used when starting your CS2 server
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1257,10 +1462,10 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         )}
 
         {activeTab === 'tasks' && (
-          <div className="bg-gray-800 p-6 rounded-lg shadow border border-gray-700">
+          <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50">
             <h3 className="text-lg font-medium text-white mb-4">Scheduled Tasks</h3>
             <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-600/50">
                 <h4 className="font-medium text-white">Steam Updates</h4>
                 <p className="text-sm text-gray-300 mb-3">
                   Schedule automatic Steam updates for your server.
@@ -1268,7 +1473,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
                 <div className="text-sm text-gray-400">Feature coming soon!</div>
               </div>
               
-              <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-600/50">
                 <h4 className="font-medium text-white">Map Rotation</h4>
                 <p className="text-sm text-gray-300 mb-3">
                   Schedule map changes for supported games.
@@ -1288,7 +1493,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
       {error && (
         <div className="fixed bottom-4 right-4 bg-red-600 text-white p-4 rounded-lg shadow border border-gray-700-lg">
           <div className="flex items-center">
-            <span className="mr-2">⚠️</span>
+            <AlertTriangle className="w-4 h-4 mr-2" />
             <span>{error}</span>
             <button
               onClick={() => setError(null)}

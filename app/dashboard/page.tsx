@@ -8,6 +8,7 @@ import ServerCard from '@/components/ServerCard'
 import ServerModal from '@/components/ServerModal'
 import FTPCredentials from '@/components/FTPCredentials'
 import { Server } from '@prisma/client'
+import { Link, Plus, AlertTriangle } from 'lucide-react'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -86,7 +87,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700">
+      <header className="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
@@ -110,50 +111,50 @@ export default function DashboardPage() {
           <FTPCredentials />
         </div>
 
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-bold text-white">Your Servers</h2>
-          <div className="flex gap-3">
+        <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50 mb-8">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-white">Your Servers</h2>
+            <div className="flex gap-3">
             <button
               onClick={handleLinkAllFTP}
               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-lg transition-colors flex items-center gap-2"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
+              <Link className="w-4 h-4" />
               Link to FTP
             </button>
             <button
               onClick={handleCreateServer}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg transition-colors flex items-center gap-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+              <Plus className="w-5 h-5" />
               Create Server
             </button>
+            </div>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded mb-4">
+          <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
             Failed to load servers. Please try again.
           </div>
         )}
 
         {!servers && !error && (
-          <div className="text-center text-gray-400 py-12">
-            Loading servers...
+          <div className="bg-gray-900/60 backdrop-blur-sm p-12 rounded-lg shadow-lg border border-gray-700/50 text-center">
+            <div className="text-gray-400">Loading servers...</div>
           </div>
         )}
 
         {servers && servers.length === 0 && (
-          <div className="text-center py-12">
+          <div className="bg-gray-900/60 backdrop-blur-sm p-12 rounded-lg shadow-lg border border-gray-700/50 text-center">
             <div className="text-gray-400 text-lg mb-4">No servers yet</div>
             <p className="text-gray-500 mb-6">Get started by creating your first game server</p>
             <button
               onClick={handleCreateServer}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg transition-colors"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg transition-colors flex items-center gap-2 mx-auto"
             >
+              <Plus className="w-5 h-5" />
               Create Your First Server
             </button>
           </div>

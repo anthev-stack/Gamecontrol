@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Server, GameType } from '@prisma/client'
 import { calculateRecommendedRam, getAvailableRamOptions, formatRam } from '@/lib/ram-calculator'
+import { AlertTriangle, CheckCircle, DollarSign, Info, Lightbulb } from 'lucide-react'
 
 interface ServerModalProps {
   server: Server | null
@@ -271,7 +272,15 @@ export default function ServerModal({ server, onClose }: ServerModalProps) {
             }`}>
               <div className="flex items-start gap-3">
                 <div className="text-2xl">
-                  {isRamBelowMin ? '⚠️' : currentRam === ramRecommendation.recommended ? '✅' : isRamAboveMax ? '💰' : 'ℹ️'}
+                  {isRamBelowMin ? (
+                    <AlertTriangle className="w-4 h-4 text-red-400" />
+                  ) : currentRam === ramRecommendation.recommended ? (
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  ) : isRamAboveMax ? (
+                    <DollarSign className="w-4 h-4 text-yellow-400" />
+                  ) : (
+                    <Info className="w-4 h-4 text-blue-400" />
+                  )}
                 </div>
                 <div className="flex-1">
                   <h4 className={`font-semibold mb-1 ${
@@ -295,16 +304,25 @@ export default function ServerModal({ server, onClose }: ServerModalProps) {
                       <span className="font-medium"> Maximum:</span> {formatRam(ramRecommendation.max)}
                     </div>
                     {ramRecommendation.note && (
-                      <div className="italic">💡 {ramRecommendation.note}</div>
+                      <div className="italic flex items-center gap-1">
+                        <Lightbulb className="w-3 h-3" />
+                        {ramRecommendation.note}
+                      </div>
                     )}
                     {isRamBelowMin && (
                       <div className="text-red-400 font-medium mt-2">
-                        ⚠️ Server may crash or perform poorly with insufficient RAM
+                        <div className="flex items-center gap-1">
+                          <AlertTriangle className="w-4 h-4" />
+                          Server may crash or perform poorly with insufficient RAM
+                        </div>
                       </div>
                     )}
                     {isRamAboveMax && (
                       <div className="text-yellow-400 font-medium mt-2">
-                        💸 You're allocating more RAM than typically needed
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="w-4 h-4" />
+                          You're allocating more RAM than typically needed
+                        </div>
                       </div>
                     )}
                   </div>
@@ -577,7 +595,10 @@ export default function ServerModal({ server, onClose }: ServerModalProps) {
             </div>
 
             <div className="bg-blue-500/10 border border-blue-500 text-blue-300 px-4 py-3 rounded text-sm">
-              ℹ️ IP address and port will be automatically assigned by the VM when the server is created.
+              <div className="flex items-center gap-1">
+                <Info className="w-4 h-4" />
+                IP address and port will be automatically assigned by the VM when the server is created.
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4">
