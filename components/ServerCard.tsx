@@ -63,6 +63,11 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
           setDownloadProgress(100)
           return
         }
+      } else if (containerResponse.status === 404) {
+        // Container no longer exists (finished downloading and was removed)
+        console.log('📊 Dashboard: Container no longer exists (404), marking download complete') // Debug log
+        setDownloadProgress(100)
+        return
       }
       
       const response = await fetch(`/api/servers/${server.id}/console/logs?tail=50`)
