@@ -6,9 +6,8 @@ import { useRouter } from 'next/navigation'
 import useSWR from 'swr'
 import ServerCard from '@/components/ServerCard'
 import ServerModal from '@/components/ServerModal'
-import FTPCredentials from '@/components/FTPCredentials'
 import { Server } from '@prisma/client'
-import { Link, Plus, AlertTriangle } from 'lucide-react'
+import { Plus, AlertTriangle } from 'lucide-react'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -49,24 +48,6 @@ export default function DashboardPage() {
     mutate()
   }
 
-  const handleLinkAllFTP = async () => {
-    try {
-      const response = await fetch('/api/servers/link-all-ftp', {
-        method: 'POST'
-      })
-      
-      if (response.ok) {
-        const result = await response.json()
-        alert(`Successfully linked ${result.linked} out of ${result.total} servers to FTP!`)
-        mutate() // Refresh server data
-      } else {
-        const error = await response.json()
-        alert(`Error: ${error.error}`)
-      }
-    } catch (error) {
-      alert(`Error: ${(error as Error).message}`)
-    }
-  }
 
   const handleDeleteServer = async (serverId: string) => {
     if (!confirm('Are you sure you want to delete this server?')) return
@@ -106,22 +87,11 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* FTP Credentials Section */}
-        <div className="mb-8">
-          <FTPCredentials />
-        </div>
 
         <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50 mb-8">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-white">Your Servers</h2>
             <div className="flex gap-3">
-            <button
-              onClick={handleLinkAllFTP}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-lg transition-colors flex items-center gap-2"
-            >
-              <Link className="w-4 h-4" />
-              Link to FTP
-            </button>
             <button
               onClick={handleCreateServer}
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg transition-colors flex items-center gap-2"

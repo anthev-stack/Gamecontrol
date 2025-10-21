@@ -136,6 +136,36 @@ export async function DELETE(
       where: { id: params.id }
     })
 
+    // Check if user has any remaining servers and cleanup FTP if needed
+    try {
+      const remainingServers = await prisma.server.count({
+        where: { userId: session.user.id }
+      })
+
+      // Call VM to cleanup FTP account if no servers remain
+      if (remainingServers === 0) {
+        const VM_API_URL = process.env.VM_API_URL
+        const VM_API_KEY = process.env.VM_API_KEY
+        
+        if (VM_API_URL && VM_API_KEY) {
+          await fetch(`${VM_API_URL}/api/ftp/cleanup`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': VM_API_KEY
+            },
+            body: JSON.stringify({
+              userId: session.user.id,
+              serverCount: 0
+            })
+          })
+        }
+      }
+    } catch (ftpError) {
+      console.error('Warning: FTP cleanup failed:', ftpError)
+      // Don't fail server deletion if FTP cleanup fails
+    }
+
     return NextResponse.json({ message: 'Server deleted successfully' })
   } catch (error) {
     console.error('Error deleting server:', error)

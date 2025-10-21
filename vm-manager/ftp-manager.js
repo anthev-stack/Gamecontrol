@@ -300,3 +300,24 @@ export async function testFTPConnection() {
   }
 }
 
+/**
+ * Check if user has any servers and delete FTP account if none
+ */
+export async function cleanupFTPAccountIfNoServers(userId, serverCount) {
+  try {
+    const username = generateFTPUsername(userId)
+    
+    if (serverCount === 0) {
+      console.log(`🗑️  No servers found for user ${userId}, deleting FTP account: ${username}`)
+      await deleteFTPUser(username)
+      return { deleted: true, reason: 'No servers' }
+    } else {
+      console.log(`✅ User ${userId} has ${serverCount} servers, keeping FTP account: ${username}`)
+      return { deleted: false, reason: 'Has servers' }
+    }
+  } catch (error) {
+    console.error(`❌ Error cleaning up FTP account for user ${userId}:`, error)
+    throw new Error(`Failed to cleanup FTP account: ${error.message}`)
+  }
+}
+

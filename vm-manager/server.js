@@ -11,7 +11,8 @@ import {
   getFTPUserInfo,
   testFTPConnection,
   generateFTPPassword,
-  generateFTPUsername
+  generateFTPUsername,
+  cleanupFTPAccountIfNoServers
 } from './ftp-manager.js'
 
 dotenv.config()
@@ -284,13 +285,65 @@ app.post('/api/servers', authenticate, async (req, res) => {
     const container = await docker.createContainer(containerConfig)
     console.log(`✅ Container created: ${container.id}`)
     
+    // Automatically create FTP account (if needed) and link server
+    let ftpInfo = null
+    try {
+      const { userId } = req.body
+      if (userId) {
+        const username = generateFTPUsername(userId)
+        
+        // Check if FTP user already exists
+        let ftpUser
+        try {
+          const existingUser = await getFTPUserInfo(username)
+          if (existingUser) {
+            console.log(`🔐 Using existing FTP account for user: ${userId}`)
+            ftpUser = existingUser
+          } else {
+            console.log(`🔐 Creating new FTP account for user: ${userId}`)
+            const password = generateFTPPassword()
+            ftpUser = await createFTPUser(userId, password)
+          }
+        } catch (error) {
+          // If getFTPUserInfo fails, create new account
+          console.log(`🔐 Creating new FTP account for user: ${userId}`)
+          const password = generateFTPPassword()
+          ftpUser = await createFTPUser(userId, password)
+        }
+        
+        // Link server to FTP
+        console.log(`🔗 Linking server to FTP...`)
+        const linkResult = await linkServerToFTP(
+          container.id, 
+          ftpUser.username, 
+          name, 
+          VM_HOST, 
+          port
+        )
+        
+        ftpInfo = {
+          username: ftpUser.username,
+          password: ftpUser.password,
+          ftpPath: linkResult.ftpPath,
+          host: ftpUser.host,
+          port: ftpUser.port
+        }
+        
+        console.log(`✅ Server linked to FTP`)
+      }
+    } catch (ftpError) {
+      console.error('⚠️  Warning: FTP setup failed:', ftpError.message)
+      // Don't fail server creation if FTP fails
+    }
+    
     res.json({
       containerId: container.id,
       containerName: containerName,
       port: port,
       rconPort: rconPort,
       host: VM_HOST,
-      status: 'created'
+      status: 'created',
+      ftp: ftpInfo
     })
   } catch (error) {
     console.error('❌ Error creating server:', error)
@@ -447,6 +500,7 @@ app.get('/api/servers/:containerId/stats', authenticate, async (req, res) => {
 // Delete server
 app.delete('/api/servers/:containerId', authenticate, async (req, res) => {
   try {
+    const { userId } = req.body
     console.log(`🗑️  Deleting container: ${req.params.containerId}`)
     const container = docker.getContainer(req.params.containerId)
     const info = await container.inspect()
@@ -467,6 +521,17 @@ app.delete('/api/servers/:containerId', authenticate, async (req, res) => {
     // Remove container
     await container.remove()
     console.log(`✅ Container deleted`)
+    
+    // Clean up FTP account if user has no more servers
+    if (userId) {
+      try {
+        // This would need to be called from the frontend with server count
+        // For now, we'll just log that cleanup should happen
+        console.log(`🔍 User ${userId} deleted server - check if FTP cleanup needed`)
+      } catch (ftpError) {
+        console.error('⚠️  Warning: FTP cleanup check failed:', ftpError.message)
+      }
+    }
     
     res.json({ message: 'Server deleted successfully' })
   } catch (error) {
@@ -773,6 +838,27 @@ app.get('/api/ftp/status', authenticate, async (req, res) => {
     res.json(status)
   } catch (error) {
     console.error('❌ Error testing FTP:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Cleanup FTP account if user has no servers
+app.post('/api/ftp/cleanup', authenticate, async (req, res) => {
+  try {
+    const { userId, serverCount } = req.body
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' })
+    }
+    
+    const result = await cleanupFTPAccountIfNoServers(userId, serverCount || 0)
+    
+    res.json({
+      message: result.deleted ? 'FTP account deleted' : 'FTP account kept',
+      ...result
+    })
+  } catch (error) {
+    console.error('❌ Error cleaning up FTP:', error)
     res.status(500).json({ error: error.message })
   }
 })
