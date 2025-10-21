@@ -18,7 +18,6 @@ export default function FTPCredentials() {
   const [loading, setLoading] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [newPassword, setNewPassword] = useState('')
-  const [setupLoading, setSetupLoading] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
 
   useEffect(() => {
@@ -37,28 +36,6 @@ export default function FTPCredentials() {
     }
   }
 
-  const handleSetupFTP = async () => {
-    setSetupLoading(true)
-    try {
-      const response = await fetch('/api/ftp/credentials', {
-        method: 'POST'
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setNewPassword(data.password)
-        setShowPassword(true)
-        await fetchFTPInfo()
-      } else {
-        alert(data.error || 'Failed to setup FTP')
-      }
-    } catch (error) {
-      alert('Error setting up FTP')
-    } finally {
-      setSetupLoading(false)
-    }
-  }
 
   const handleResetPassword = async () => {
     if (!confirm('Are you sure you want to reset your FTP password? This will disconnect any active FTP sessions.')) {
@@ -143,38 +120,15 @@ export default function FTPCredentials() {
           <div className="flex-1">
             <h3 className="text-xl font-bold text-white mb-2">FTP File Access</h3>
             <p className="text-gray-400 mb-4">
-              Get FTP access to manage your server files with FileZilla or any FTP client.
+              FTP access will be automatically created when you create your first server. 
+              You'll be able to manage your server files with FileZilla or any FTP client.
             </p>
-            <button
-              onClick={handleSetupFTP}
-              disabled={setupLoading}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
-            >
-              {setupLoading ? 'Setting up...' : 'Setup FTP Access'}
-            </button>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Lightbulb className="w-4 h-4" />
+              <span>Create a server to get FTP access automatically</span>
+            </div>
           </div>
         </div>
-
-        {showPassword && newPassword && (
-          <div className="mt-4 p-4 bg-green-500/10 border border-green-500 rounded-lg">
-            <h4 className="text-green-400 font-semibold mb-2 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5" />
-              FTP Account Created!
-            </h4>
-            <p className="text-sm text-gray-300 mb-3">
-              <strong>Save your password now!</strong> It won't be shown again.
-            </p>
-            <div className="bg-gray-800/80 p-3 rounded font-mono text-sm text-green-400 border border-gray-600/50">
-              Password: {newPassword}
-            </div>
-            <button
-              onClick={() => copyToClipboard(newPassword, 'Password')}
-              className="mt-2 text-sm text-blue-400 hover:text-blue-300"
-            >
-              📋 Copy Password
-            </button>
-          </div>
-        )}
       </div>
     )
   }

@@ -8,6 +8,7 @@ import ServerCard from '@/components/ServerCard'
 import ServerModal from '@/components/ServerModal'
 import { Server } from '@prisma/client'
 import { Plus, AlertTriangle } from 'lucide-react'
+import FTPCredentials from '@/components/FTPCredentials'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -87,6 +88,10 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* FTP Credentials Section */}
+        <div className="mb-8">
+          <FTPCredentials />
+        </div>
 
         <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50 mb-8">
           <div className="flex justify-between items-center">
