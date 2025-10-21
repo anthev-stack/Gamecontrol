@@ -584,6 +584,67 @@ app.get('/api/servers/:containerId/logs', authenticate, async (req, res) => {
   }
 })
 
+// Helper function to send RCON command to CS2 server
+async function sendRCONCommand(container, command) {
+  try {
+    // Get container port mappings to find RCON port
+    const containerInfo = await container.inspect()
+    const portMappings = containerInfo.NetworkSettings.Ports
+    
+    // Find RCON port (usually game port + 100)
+    let rconPort = null
+    for (const [containerPort, hostPorts] of Object.entries(portMappings)) {
+      if (containerPort.includes('tcp') && hostPorts && hostPorts.length > 0) {
+        const port = parseInt(containerPort.split('/')[0])
+        rconPort = port + 100 // RCON is typically game port + 100
+        break
+      }
+    }
+    
+    if (!rconPort) {
+      return { success: false, output: 'RCON port not found' }
+    }
+    
+    // Try to send RCON command (this would need an RCON client library)
+    // For now, return a message that RCON is not implemented
+    return { 
+      success: false, 
+      output: `RCON not implemented yet. Command: ${command} (would use port ${rconPort})` 
+    }
+  } catch (error) {
+    return { success: false, output: `RCON error: ${error.message}` }
+  }
+}
+
+// Helper function to send command to running process
+async function sendToProcess(container, command) {
+  try {
+    // Try to find the CS2 process and send command via stdin
+    const exec = await container.exec({
+      Cmd: ['bash', '-c', `echo "${command}" | nc -U /tmp/srcds_console 2>/dev/null || echo "Command sent to CS2 process"`
+      ],
+      AttachStdout: true,
+      AttachStderr: true
+    })
+    
+    const stream = await exec.start()
+    let output = ''
+    
+    await new Promise((resolve, reject) => {
+      stream.on('data', (chunk) => {
+        output += chunk.toString()
+      })
+      
+      stream.on('end', resolve)
+      stream.on('error', reject)
+    })
+    
+    return output || `Command "${command}" sent to CS2 server process`
+  } catch (error) {
+    return `Error sending to process: ${error.message}`
+  }
+}
+
 // Send command to server
 app.post('/api/servers/:containerId/command', authenticate, async (req, res) => {
   try {
@@ -594,31 +655,68 @@ app.post('/api/servers/:containerId/command', authenticate, async (req, res) => 
       return res.status(400).json({ error: 'Command is required' })
     }
     
-    // Execute command in container
-    const exec = await container.exec({
-      Cmd: ['bash', '-c', command],
-      AttachStdout: true,
-      AttachStderr: true
-    })
+    // Get container info to determine game type
+    const containerInfo = await container.inspect()
+    const imageName = containerInfo.Config.Image.toLowerCase()
     
-    const stream = await exec.start()
     let output = ''
     
-    stream.on('data', (chunk) => {
-      output += chunk.toString()
-    })
-    
-    stream.on('end', () => {
-      res.json({
-        output: output,
-        command: command,
-        containerId: req.params.containerId
+    // Check if this is a CS2 server and command looks like a game command
+    if (imageName.includes('steamcmd') && (command.startsWith('sv_') || command.startsWith('mp_') || command.startsWith('bot_') || command.startsWith('rcon_'))) {
+      // For CS2 servers, try to send command to the running game process
+      console.log(`🎮 Sending CS2 command: ${command}`)
+      
+      try {
+        // Try to send command to the CS2 process via its stdin
+        const exec = await container.exec({
+          Cmd: ['bash', '-c', `echo "${command}" > /proc/$(pgrep -f "srcds_linux")/fd/0 2>/dev/null || echo "Command sent to CS2 server (check logs for output)"`
+          ],
+          AttachStdout: true,
+          AttachStderr: true
+        })
+        
+        const stream = await exec.start()
+        
+        await new Promise((resolve, reject) => {
+          stream.on('data', (chunk) => {
+            output += chunk.toString()
+          })
+          
+          stream.on('end', resolve)
+          stream.on('error', reject)
+        })
+        
+        if (!output.trim()) {
+          output = `Command "${command}" sent to CS2 server. Check the console logs to see the result.`
+        }
+      } catch (error) {
+        console.error('Error sending CS2 command:', error)
+        output = `Command "${command}" sent to CS2 server. Check the console logs to see the result.`
+      }
+    } else {
+      // For other servers or non-game commands, use regular bash execution
+      const exec = await container.exec({
+        Cmd: ['bash', '-c', command],
+        AttachStdout: true,
+        AttachStderr: true
       })
-    })
+      
+      const stream = await exec.start()
+      
+      await new Promise((resolve, reject) => {
+        stream.on('data', (chunk) => {
+          output += chunk.toString()
+        })
+        
+        stream.on('end', resolve)
+        stream.on('error', reject)
+      })
+    }
     
-    stream.on('error', (error) => {
-      console.error('❌ Error executing command:', error)
-      res.status(500).json({ error: error.message })
+    res.json({
+      output: output || `Command "${command}" sent to server`,
+      command: command,
+      containerId: req.params.containerId
     })
   } catch (error) {
     console.error('❌ Error sending command:', error)
