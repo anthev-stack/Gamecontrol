@@ -1,7 +1,7 @@
 'use client'
 
 import { Server, GameType, ServerStatus } from '@prisma/client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatRam } from '@/lib/ram-calculator'
 import { Target, Axe, Wrench, Folder } from 'lucide-react'
@@ -15,12 +15,33 @@ interface ServerCardProps {
 
 export default function ServerCard({ server, onEdit, onDelete, onRefresh }: ServerCardProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [isCS2Ready, setIsCS2Ready] = useState(false)
   const router = useRouter()
 
   const gameIcons: Record<GameType, React.ComponentType<{ className?: string }>> = {
     CS2: Target,
     MINECRAFT: Axe,
     RUST: Wrench,
+  }
+
+  // Check if CS2 server is ready (download complete)
+  useEffect(() => {
+    if (server.game === 'CS2') {
+      checkCS2Ready()
+    }
+  }, [server.game, server.id])
+
+  const checkCS2Ready = async () => {
+    try {
+      const response = await fetch(`/api/servers/${server.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        // If container is stopped/exited, CS2 download is complete
+        setIsCS2Ready(data.status === 'stopped' || data.status === 'exited')
+      }
+    } catch (err) {
+      console.error('Error checking CS2 ready status:', err)
+    }
   }
 
   const statusColors: Record<ServerStatus, string> = {
@@ -141,8 +162,13 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`w-3 h-3 rounded-full ${statusColors[server.status]} animate-pulse`}></span>
-            <span className="text-sm text-gray-300">{server.status}</span>
+            <span className={`w-3 h-3 rounded-full ${
+              server.game === 'CS2' && !isCS2Ready ? 'bg-yellow-500' : 
+              statusColors[server.status]
+            } animate-pulse`}></span>
+            <span className="text-sm text-gray-300">
+              {server.game === 'CS2' && !isCS2Ready ? 'Downloading CS2...' : server.status}
+            </span>
           </div>
         </div>
 
@@ -173,11 +199,14 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
           {server.status === 'STOPPED' && (
             <button
               onClick={() => handleStatusChange('start')}
-              disabled={isLoading || !server.host}
+              disabled={isLoading || !server.host || (server.game === 'CS2' && !isCS2Ready)}
               className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={!server.host ? 'Server must be deployed to VM first' : ''}
+              title={
+                !server.host ? 'Server must be deployed to VM first' :
+                server.game === 'CS2' && !isCS2Ready ? 'CS2 download in progress...' : ''
+              }
             >
-              Start
+              {server.game === 'CS2' && !isCS2Ready ? 'Downloading...' : 'Start'}
             </button>
           )}
           {server.status === 'RUNNING' && (
