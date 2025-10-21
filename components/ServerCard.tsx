@@ -50,10 +50,17 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
 
     try {
       const response = await fetch(`/api/servers/${server.id}/console/logs?tail=50`)
+      console.log('📊 Dashboard: API response status:', response.status) // Debug log
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('📊 Dashboard: API response data:', data) // Debug log
+        
         const logsString = data.logs || ''
+        console.log('📊 Dashboard: Raw logs string:', logsString) // Debug log
+        
         const logs = logsString.split('\n').filter((log: string) => log.trim() !== '')
+        console.log('📊 Dashboard: Parsed logs array:', logs) // Debug log
         
         // Look for Steam update progress in logs - both old and new formats
         const progressLogs = logs.filter((log: string) => 
@@ -73,6 +80,7 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
           log.includes('Download complete') ||
           log.includes('Update complete')
         )
+        console.log('📊 Dashboard: Found progress logs:', progressLogs.length, progressLogs) // Debug log
 
         if (progressLogs.length > 0) {
           const latestLog = progressLogs[progressLogs.length - 1]
@@ -100,7 +108,7 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
         }
       }
     } catch (err) {
-      console.error('Error tracking download progress:', err)
+      console.error('📊 Dashboard: Error tracking download progress:', err)
     }
   }
 
