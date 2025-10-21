@@ -51,7 +51,7 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
       if (response.ok) {
         const logs = await response.json()
         
-        // Look for Steam update progress in logs
+        // Look for Steam update progress in logs - both old and new formats
         const progressLogs = logs.filter((log: string) => 
           log.includes('[ 0%]') || 
           log.includes('[10%]') || 
@@ -64,6 +64,8 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
           log.includes('[80%]') || 
           log.includes('[90%]') || 
           log.includes('[100%]') ||
+          log.includes('progress:') ||
+          log.includes('Update state') ||
           log.includes('Download complete') ||
           log.includes('Update complete')
         )
@@ -71,12 +73,19 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
         if (progressLogs.length > 0) {
           const latestLog = progressLogs[progressLogs.length - 1]
           
-          // Extract percentage from log
-          const percentMatch = latestLog.match(/\[(\d+)%\]/)
-          if (percentMatch) {
-            setDownloadProgress(parseInt(percentMatch[1]))
-          } else if (latestLog.includes('Download complete') || latestLog.includes('Update complete')) {
-            setDownloadProgress(100)
+          // Try new steamcmd progress format first: "progress: 0.59 (331282603 / 56099402942)"
+          const newProgressMatch = latestLog.match(/progress: (\d+\.?\d*) \((\d+) \/ (\d+)\)/)
+          if (newProgressMatch) {
+            const progress = parseFloat(newProgressMatch[1])
+            setDownloadProgress(Math.round(progress))
+          } else {
+            // Fallback to old format: "[59%]"
+            const percentMatch = latestLog.match(/\[(\d+)%\]/)
+            if (percentMatch) {
+              setDownloadProgress(parseInt(percentMatch[1]))
+            } else if (latestLog.includes('Download complete') || latestLog.includes('Update complete')) {
+              setDownloadProgress(100)
+            }
           }
         }
       }
