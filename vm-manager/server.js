@@ -194,7 +194,7 @@ app.post('/api/servers', authenticate, async (req, res) => {
         ],
         Cmd: [
           'bash', '-c',
-          `timeout 30 steamcmd +login anonymous +app_update 730 +quit || echo "Steam update completed or timed out"; echo "Steam update complete, starting CS2..."; cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server; echo "Directory contents:"; ls -la; echo "Starting CS2 server..."; exec ${generateCS2StartupCommand(config, port, rconPort)}`
+          `echo "Downloading CS2 server files..."; mkdir -p /home/steam/cs2server; cd /home/steam/cs2server; wget -O steamcmd.tar.gz "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz" && tar -xzf steamcmd.tar.gz && rm steamcmd.tar.gz; echo "Running steamcmd to download CS2..."; ./steamcmd.sh +login anonymous +app_update 730 +quit; echo "CS2 server files downloaded, starting server..."; cd steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server; exec ${generateCS2StartupCommand(config, port, rconPort)}`
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},
