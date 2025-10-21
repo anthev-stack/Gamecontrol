@@ -4,7 +4,7 @@ import { Server, GameType, ServerStatus } from '@prisma/client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatRam } from '@/lib/ram-calculator'
-import { Target, Pickaxe, Wrench, Folder } from 'lucide-react'
+import { Target, Axe, Wrench, Folder } from 'lucide-react'
 
 interface ServerCardProps {
   server: Server
@@ -19,7 +19,7 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
 
   const gameIcons: Record<GameType, React.ComponentType<{ className?: string }>> = {
     CS2: Target,
-    MINECRAFT: Pickaxe,
+    MINECRAFT: Axe,
     RUST: Wrench,
   }
 
