@@ -946,6 +946,12 @@ app.get('/api/servers/:containerId/console', authenticate, async (req, res) => {
     logs.on('data', (chunk) => {
       const logLine = chunk.toString().trim()
       if (logLine) {
+        // Debug: Log problematic characters for CS2
+        const hasControlChars = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/.test(logLine)
+        if (hasControlChars) {
+          console.log('🔍 CS2 log with control chars:', JSON.stringify(logLine.substring(0, 50)))
+        }
+        
         // Properly escape JSON string - handle quotes, backslashes, and control characters
         const escapedMessage = logLine
           .replace(/\\/g, '\\\\')  // Escape backslashes first
@@ -953,7 +959,9 @@ app.get('/api/servers/:containerId/console', authenticate, async (req, res) => {
           .replace(/\n/g, '\\n')   // Escape newlines
           .replace(/\r/g, '\\r')   // Escape carriage returns
           .replace(/\t/g, '\\t')   // Escape tabs
-          .replace(/[\x00-\x1F\x7F]/g, '') // Remove other control characters
+          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '') // Remove all control characters except \n, \r, \t
+          .replace(/[\u2000-\u206F\u2E00-\u2E7F\u3000-\u303F\uFEFF]/g, '') // Remove Unicode control chars
+          .replace(/[\uFFFE\uFFFF]/g, '') // Remove BOM and other problematic chars
         
         res.write(`data: {"type":"log","message":"${escapedMessage}"}\n\n`)
       }
