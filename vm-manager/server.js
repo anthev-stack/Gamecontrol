@@ -181,11 +181,20 @@ app.post('/api/servers', authenticate, async (req, res) => {
         Image: 'steamcmd/steamcmd:latest',
         name: containerName,
         Env: [
-          'STEAMCMD_VALIDATE=1'
+          'SRCDS_TOKEN=' + (config.steamAccount || ''),
+          'SRCDS_RCON_PASSWORD=' + (config.rconPassword || 'changeme'),
+          'SRCDS_PW=' + (config.serverPassword || ''),
+          'SRCDS_HOSTNAME=' + (name || 'CS2 Server'),
+          'SRCDS_MAXPLAYERS=' + (config.maxPlayers || 10),
+          'SRCDS_STARTMAP=' + (config.map || 'de_dust2'),
+          'SRCDS_GAMEMODE=' + (config.gameMode || 'competitive'),
+          'SRCDS_TICKRATE=' + (config.tickrate || 128),
+          'SRCDS_WORKSHOP_COLLECTION=' + (config.workshopMapId || ''),
+          'SRCDS_ADDITIONAL_ARGS=' + (config.customArgs || '')
         ],
         Cmd: [
           'bash', '-c',
-          `steamcmd +login anonymous +app_update 730 +quit & sleep 10; pkill -f steamcmd; sleep 2; cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server; echo "Starting CS2 server..."; ls -la; exec ${generateCS2StartupCommand(config, port, rconPort)}`
+          `steamcmd +login anonymous +app_update 730 +quit; echo "Steam update complete, starting CS2..."; cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server; echo "Directory contents:"; ls -la; echo "Starting CS2 server..."; exec ${generateCS2StartupCommand(config, port, rconPort)}`
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},
