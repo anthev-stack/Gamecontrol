@@ -304,8 +304,24 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
     
     // Poll for stats every 30 seconds
     const interval = setInterval(fetchServerStats, 30000)
-    return () => clearInterval(interval)
-  }, [serverId])
+    
+    // For CS2 servers, also check ready status every 2 seconds
+    let cs2Interval: NodeJS.Timeout | null = null
+    if (server?.game === 'CS2') {
+      cs2Interval = setInterval(() => {
+        if (!isCS2Ready) {
+          checkCS2Ready()
+        } else {
+          console.log('📊 Server Detail: Stopping CS2 ready check - already ready') // Debug log
+        }
+      }, 2000)
+    }
+    
+    return () => {
+      clearInterval(interval)
+      if (cs2Interval) clearInterval(cs2Interval)
+    }
+  }, [serverId, server?.game, isCS2Ready])
 
   const fetchServerDetails = async () => {
     try {
@@ -338,13 +354,34 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
   }
 
   const checkCS2Ready = async () => {
+    if (server?.game !== 'CS2' || isCS2Ready) {
+      console.log('📊 Server Detail: Skipping CS2 ready check - not CS2 or already ready') // Debug log
+      return
+    }
+
     try {
-      // Check if the container is in "exited" state (download complete)
-      const response = await fetch(`/api/servers/${serverId}`)
+      // Use the new VM status endpoint for accurate progress tracking
+      const response = await fetch(`/api/servers/${serverId}/status`)
       if (response.ok) {
         const data = await response.json()
-        // If container is stopped/exited, CS2 download is complete
-        setIsCS2Ready(data.status === 'stopped' || data.status === 'exited')
+        console.log('📊 Server Detail: Status data:', data) // Debug log
+        
+        if (data.ready && !isCS2Ready) {
+          console.log('📊 Server Detail: CS2 download is ready!') // Debug log
+          setIsCS2Ready(true)
+        }
+      } else if (response.status === 500) {
+        // VM doesn't have the new status endpoint yet, fall back to old method
+        console.log('📊 Server Detail: Status endpoint not available (500), falling back to old method') // Debug log
+        const fallbackResponse = await fetch(`/api/servers/${serverId}`)
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json()
+          const isReady = fallbackData.status === 'stopped' || fallbackData.status === 'exited'
+          if (isReady && !isCS2Ready) {
+            console.log('📊 Server Detail: CS2 ready detected from fallback method') // Debug log
+            setIsCS2Ready(true)
+          }
+        }
       }
     } catch (err) {
       console.error('Error checking CS2 ready status:', err)
