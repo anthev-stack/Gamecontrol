@@ -294,6 +294,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [consoleRefreshTrigger, setConsoleRefreshTrigger] = useState(0)
   const [isCS2Ready, setIsCS2Ready] = useState(false)
+  const [hasCS2BeenStarted, setHasCS2BeenStarted] = useState(false)
   const router = useRouter()
 
   const serverId = params.serverId
@@ -359,6 +360,13 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
       return
     }
 
+    // If CS2 has been started before, consider it ready
+    if (hasCS2BeenStarted && !isCS2Ready) {
+      console.log('📊 Server Detail: CS2 has been started before, marking as ready') // Debug log
+      setIsCS2Ready(true)
+      return
+    }
+
     try {
       // Use the new VM status endpoint for accurate progress tracking
       const response = await fetch(`/api/servers/${serverId}/status`)
@@ -366,6 +374,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         const data = await response.json()
         console.log('📊 Server Detail: Status data:', data) // Debug log
         
+        // Check if download is ready
         if (data.ready && !isCS2Ready) {
           console.log('📊 Server Detail: CS2 download is ready!') // Debug log
           setIsCS2Ready(true)
@@ -409,6 +418,13 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
       
       const result = await response.json()
       console.log(`✅ Server ${action} successful:`, result)
+      
+      // For CS2 servers, mark as started when successfully started
+      if (server?.game === 'CS2' && action === 'start') {
+        setHasCS2BeenStarted(true)
+        setIsCS2Ready(true)
+        console.log('📊 Server Detail: CS2 server started, marking as ready for future starts')
+      }
       
       // Refresh stats after action
       setTimeout(fetchServerStats, 2000)
