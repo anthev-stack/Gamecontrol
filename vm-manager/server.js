@@ -395,40 +395,41 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
         console.log(`ℹ️ No existing game container found`)
       }
       
-      // Create CS2 game server container
-      const gameContainer = await docker.createContainer({
-        Image: 'steamcmd/steamcmd:latest',
-        name: gameContainerName,
-        Entrypoint: ['/bin/bash'],
-        Cmd: [
-          '-c',
-          `echo "Starting CS2 game server..."; cd /home/steam/cs2; echo "CS2 directory contents:"; ls -la; echo "Looking for CS2 server binary..."; find . -name "*srcds*" -type f; echo "Checking game directory..."; ls -la game/; echo "Starting CS2 server..."; exec ./game/bin/linuxsteamclient64_srv -game cs2 +map de_dust2 +maxplayers 10 +port ${port} +rcon_port ${rconPort} +rcon_password changeme +sv_setsteamaccount anonymous`
-        ],
-        ExposedPorts: {
-          [`${port}/tcp`]: {},
-          [`${port}/udp`]: {},
-          [`${rconPort}/tcp`]: {}
-        },
-        HostConfig: {
-          PortBindings: {
-            [`${port}/tcp`]: [{ HostPort: `${port}` }],
-            [`${port}/udp`]: [{ HostPort: `${port}` }],
-            [`${rconPort}/tcp`]: [{ HostPort: `${rconPort}` }]
-          },
-          Memory: 2048 * 1024 * 1024, // 2GB default
-          RestartPolicy: {
-            Name: 'unless-stopped'
-          }
+      console.log(`🎮 Using existing CS2 download container for game server...`)
+      
+      // Use the existing download container directly
+      const downloadContainer = docker.getContainer(req.params.containerId)
+      const port = 27015
+      const rconPort = 28015
+      
+      console.log(`🎮 Starting CS2 game server in download container...`)
+      
+      // Start the download container if it's not running
+      try {
+        const containerInfo = await downloadContainer.inspect()
+        if (containerInfo.State.Status !== "running") {
+          console.log(`🔄 Starting download container...`)
+          await downloadContainer.start()
         }
+      } catch (err) {
+        console.error(`❌ Error starting download container:`, err)
+        return res.status(500).json({ error: "Failed to start download container" })
+      }
+      
+      // Execute the CS2 server command in the existing container
+      const exec = await downloadContainer.exec({
+        Cmd: ["/bin/bash", "-c", "cd /home/steam/cs2 && exec ./game/bin/linuxsteamrt64/cs2 -game cs2 +map de_dust2 +maxplayers 10 +port " + port + " +rcon_port " + rconPort + " +rcon_password changeme +sv_setsteamaccount anonymous"],
+        AttachStdout: true,
+        AttachStderr: true
       })
       
-      await gameContainer.start()
+      await exec.start()
       
-      console.log(`✅ CS2 game server started with container ID: ${gameContainer.id}`)
-      res.json({ 
-        message: 'CS2 game server started', 
-        status: 'running',
-        containerId: gameContainer.id,
+      console.log(`✅ CS2 game server started in download container: ${req.params.containerId}`)
+      res.json({
+        message: "CS2 game server started",
+        status: "running",
+        containerId: req.params.containerId,
         port: port,
         rconPort: rconPort
       })
