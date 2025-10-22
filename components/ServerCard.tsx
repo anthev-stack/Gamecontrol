@@ -17,6 +17,7 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
   const [isLoading, setIsLoading] = useState(false)
   const [isCS2Ready, setIsCS2Ready] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState(0)
+  const [showMarkReady, setShowMarkReady] = useState(false)
   const router = useRouter()
 
   const gameIcons: Record<GameType, React.ComponentType<{ className?: string }>> = {
@@ -85,10 +86,9 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
             setDownloadProgress(100)
           }
         } else {
-          // If we can't get logs either, assume download is complete for CS2 servers
-          // This handles the case where the container was cleaned up after completion
-          console.log('📊 Dashboard: Cannot access logs, assuming CS2 download is complete') // Debug log
-          setDownloadProgress(100)
+          // If we can't get logs either, show manual mark ready button for CS2 servers
+          console.log('📊 Dashboard: Cannot access logs, showing manual mark ready option') // Debug log
+          setShowMarkReady(true)
         }
       }
     } catch (err) {
@@ -107,6 +107,13 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
     } catch (err) {
       console.error('Error checking CS2 ready status:', err)
     }
+  }
+
+  const handleMarkReady = () => {
+    console.log('📊 Dashboard: Manually marking CS2 server as ready') // Debug log
+    setDownloadProgress(100)
+    setIsCS2Ready(true)
+    setShowMarkReady(false)
   }
 
   const statusColors: Record<ServerStatus, string> = {
@@ -288,6 +295,21 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
                       style={{ width: `${downloadProgress}%` }}
                     ></div>
                   </div>
+                  
+                  {/* Manual Mark Ready Button */}
+                  {showMarkReady && (
+                    <div className="mt-3 p-3 bg-yellow-900/20 border border-yellow-600/50 rounded-lg">
+                      <p className="text-xs text-yellow-300 mb-2">
+                        Download container not found. If the download completed, mark as ready:
+                      </p>
+                      <button
+                        onClick={handleMarkReady}
+                        className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-xs rounded transition-colors"
+                      >
+                        Mark as Ready
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
