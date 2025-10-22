@@ -365,20 +365,22 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
   try {
     console.log(`▶️  Starting container: ${req.params.containerId}`)
     
-    // Get server info from database
-    const server = await prisma.server.findFirst({ 
-      where: { containerId: req.params.containerId } 
-    })
+    // Get container info to determine if it's a CS2 download container
+    const container = docker.getContainer(req.params.containerId)
+    const containerInfo = await container.inspect()
+    const containerName = containerInfo.Name
     
-    if (!server) {
-      return res.status(404).json({ error: 'Server not found' })
-    }
-    
-    // For CS2 servers, create a new container for the actual game server
-    if (server.game === 'CS2') {
-      const gameContainerName = `gamecontrol-cs2-game-${server.id}`
-      const port = server.port
-      const rconPort = port + 100
+    // Check if this is a CS2 download container (contains 'cs2' and 'gamecontrol')
+    if (containerName.includes('cs2') && containerName.includes('gamecontrol')) {
+      console.log(`🎮 CS2 download container detected, creating game server...`)
+      
+      // Extract server ID from container name (assuming format: gamecontrol-cs2-{serverId})
+      const serverId = containerName.split('-').pop()
+      const gameContainerName = `gamecontrol-cs2-game-${serverId}`
+      
+      // Use default ports for CS2 (will be updated by Vercel side)
+      const port = 27015
+      const rconPort = 28015
       
       console.log(`🎮 Creating CS2 game server container...`)
       
@@ -388,7 +390,7 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
         name: gameContainerName,
         Cmd: [
           'bash', '-c',
-          `echo "Starting CS2 game server..."; cd /home/steam/steamcmd/steamapps/common/Counter-Strike\\ Global\\ Offensive\\ Beta\\ - Dedicated\\ Server; echo "CS2 directory contents:"; ls -la; echo "Starting CS2 server..."; exec ${generateCS2StartupCommand(server, port, rconPort)}`
+          `echo "Starting CS2 game server..."; cd /home/steam/cs2; echo "CS2 directory contents:"; ls -la; echo "Starting CS2 server..."; exec ./game/bin/linuxsteamclient64_srv +set_steam_account anonymous +sv_setsteamaccount anonymous +map de_dust2 +maxplayers 10 +port ${port} +rcon_port ${rconPort} +rcon_password changeme`
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},
@@ -401,7 +403,7 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
             [`${port}/udp`]: [{ HostPort: `${port}` }],
             [`${rconPort}/tcp`]: [{ HostPort: `${rconPort}` }]
           },
-          Memory: (server.allocatedRam || 2048) * 1024 * 1024,
+          Memory: 2048 * 1024 * 1024, // 2GB default
           RestartPolicy: {
             Name: 'unless-stopped'
           }
@@ -410,23 +412,19 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
       
       await gameContainer.start()
       
-      // Update server with game container ID
-      await prisma.server.update({
-        where: { id: server.id },
-        data: { 
-          status: 'RUNNING',
-          containerId: gameContainer.id
-        }
+      console.log(`✅ CS2 game server started with container ID: ${gameContainer.id}`)
+      res.json({ 
+        message: 'CS2 game server started', 
+        status: 'running',
+        containerId: gameContainer.id,
+        port: port,
+        rconPort: rconPort
       })
-      
-      console.log(`✅ CS2 game server started`)
-      res.json({ message: 'CS2 game server started', status: 'running' })
     } else {
       // For other games, start the existing container
-    const container = docker.getContainer(req.params.containerId)
-    await container.start()
-    console.log(`✅ Container started`)
-    res.json({ message: 'Server started', status: 'running' })
+      await container.start()
+      console.log(`✅ Container started`)
+      res.json({ message: 'Server started', status: 'running' })
     }
   } catch (error) {
     console.error('❌ Error starting server:', error)

@@ -63,6 +63,29 @@ export async function POST(
       return NextResponse.json({ error: result.error }, { status: 500 })
     }
 
+    // For CS2 servers, update the database with the new game container ID
+    if (server.game === 'CS2' && result.containerId) {
+      console.log(`🔄 Updating CS2 server with new game container ID: ${result.containerId}`)
+      
+      await prisma.server.update({
+        where: { id: serverId },
+        data: { 
+          status: 'RUNNING',
+          containerId: result.containerId,
+          port: result.port || server.port,
+          rconPort: result.rconPort || server.rconPort
+        }
+      })
+      
+      console.log('✅ CS2 server updated with game container details')
+    } else {
+      // For other games, just update status
+      await prisma.server.update({
+        where: { id: serverId },
+        data: { status: 'RUNNING' }
+      })
+    }
+
     console.log('✅ Server started successfully')
     return NextResponse.json({ message: 'Server started successfully', status: 'running' })
   } catch (error) {
