@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
@@ -15,6 +14,14 @@ export async function GET(
     }
 
     const serverId = params.id
+
+    // Dynamic import of Prisma to avoid initialization issues
+    const { prisma } = await import('@/lib/prisma')
+    
+    if (!prisma) {
+      console.error('❌ Prisma client is not available')
+      return NextResponse.json({ error: 'Database connection error' }, { status: 500 })
+    }
 
     // Get server from database
     const server = await prisma.server.findFirst({
