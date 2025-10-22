@@ -84,6 +84,11 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
             console.log('📊 Dashboard: Found completion message, marking as complete') // Debug log
             setDownloadProgress(100)
           }
+        } else {
+          // If we can't get logs either, assume download is complete for CS2 servers
+          // This handles the case where the container was cleaned up after completion
+          console.log('📊 Dashboard: Cannot access logs, assuming CS2 download is complete') // Debug log
+          setDownloadProgress(100)
         }
       }
     } catch (err) {
