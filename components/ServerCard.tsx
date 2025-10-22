@@ -64,10 +64,32 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
           return
         }
       } else if (containerResponse.status === 404) {
-        // Container no longer exists (finished downloading and was removed)
-        console.log('📊 Dashboard: Container no longer exists (404), marking download complete') // Debug log
-        setDownloadProgress(100)
-        return
+        // Container no longer exists - check logs to see if download actually completed
+        console.log('📊 Dashboard: Container no longer exists (404), checking logs for completion') // Debug log
+        
+        // Try to get logs to see if download completed properly
+        const logsResponse = await fetch(`/api/servers/${server.id}/console/logs?tail=100`)
+        if (logsResponse.ok) {
+          const logsData = await logsResponse.json()
+          const logsString = logsData.logs || ''
+          const logs = logsString.split('\n').filter((log: string) => log.trim() !== '')
+          
+          // Check if we see completion messages
+          const hasCompletionMessage = logs.some((log: string) => 
+            log.includes('Success! App') || 
+            log.includes('fully installed') || 
+            log.includes('CS2 download complete')
+          )
+          
+          if (hasCompletionMessage) {
+            console.log('📊 Dashboard: Found completion message in logs, marking download complete') // Debug log
+            setDownloadProgress(100)
+            return
+          } else {
+            console.log('📊 Dashboard: No completion message found, download may still be in progress') // Debug log
+            // Don't mark as complete yet, continue with normal progress tracking
+          }
+        }
       }
       
       const response = await fetch(`/api/servers/${server.id}/console/logs?tail=50`)
@@ -98,8 +120,14 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
           log.includes('[100%]') ||
           log.includes('progress:') ||
           log.includes('Update state') ||
+          log.includes('downloading') ||
+          log.includes('verifying') ||
+          log.includes('committing') ||
+          log.includes('Success! App') ||
+          log.includes('fully installed') ||
           log.includes('Download complete') ||
-          log.includes('Update complete')
+          log.includes('Update complete') ||
+          log.includes('CS2 download complete')
         )
         console.log('📊 Dashboard: Found progress logs:', progressLogs.length, progressLogs) // Debug log
 
@@ -107,23 +135,31 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
           const latestLog = progressLogs[progressLogs.length - 1]
           console.log('📊 Dashboard progress log:', latestLog) // Debug log
           
-          // Try new steamcmd progress format first: "progress: 0.59 (331282603 / 56099402942)"
-          const newProgressMatch = latestLog.match(/progress: (\d+\.?\d*) \((\d+) \/ (\d+)\)/)
-          if (newProgressMatch) {
-            const progress = parseFloat(newProgressMatch[1])
-            const roundedProgress = Math.round(progress)
-            console.log('📊 Dashboard progress update:', roundedProgress + '%') // Debug log
-            setDownloadProgress(roundedProgress)
+          // Check for completion messages first
+          if (latestLog.includes('Success! App') || 
+              latestLog.includes('fully installed') || 
+              latestLog.includes('CS2 download complete')) {
+            console.log('📊 Dashboard progress complete: 100%') // Debug log
+            setDownloadProgress(100)
           } else {
-            // Fallback to old format: "[59%]"
-            const percentMatch = latestLog.match(/\[(\d+)%\]/)
-            if (percentMatch) {
-              const progress = parseInt(percentMatch[1])
-              console.log('📊 Dashboard progress update (old format):', progress + '%') // Debug log
-              setDownloadProgress(progress)
-            } else if (latestLog.includes('Download complete') || latestLog.includes('Update complete')) {
-              console.log('📊 Dashboard progress complete: 100%') // Debug log
-              setDownloadProgress(100)
+            // Try new steamcmd progress format first: "progress: 0.59 (331282603 / 56099402942)"
+            const newProgressMatch = latestLog.match(/progress: (\d+\.?\d*) \((\d+) \/ (\d+)\)/)
+            if (newProgressMatch) {
+              const progress = parseFloat(newProgressMatch[1])
+              const roundedProgress = Math.round(progress)
+              console.log('📊 Dashboard progress update:', roundedProgress + '%') // Debug log
+              setDownloadProgress(roundedProgress)
+            } else {
+              // Fallback to old format: "[59%]"
+              const percentMatch = latestLog.match(/\[(\d+)%\]/)
+              if (percentMatch) {
+                const progress = parseInt(percentMatch[1])
+                console.log('📊 Dashboard progress update (old format):', progress + '%') // Debug log
+                setDownloadProgress(progress)
+              } else if (latestLog.includes('Download complete') || latestLog.includes('Update complete')) {
+                console.log('📊 Dashboard progress complete: 100%') // Debug log
+                setDownloadProgress(100)
+              }
             }
           }
         }
