@@ -63,8 +63,12 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
         
         if (statusData.ready) {
           console.log('📊 Dashboard: Download is ready!') // Debug log
-          // Could trigger a refresh or update UI state here
+          setIsCS2Ready(true)
         }
+      } else if (statusResponse.status === 500) {
+        // VM doesn't have the new status endpoint yet, show manual mark ready
+        console.log('📊 Dashboard: Status endpoint not available (500), showing manual mark ready') // Debug log
+        setShowMarkReady(true)
       } else if (statusResponse.status === 404) {
         // Container doesn't exist - check if we have completion logs
         console.log('📊 Dashboard: Container not found (404), checking logs for completion') // Debug log
