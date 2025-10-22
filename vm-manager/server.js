@@ -374,27 +374,6 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
     if (containerName.includes('cs2') && containerName.includes('gamecontrol')) {
       console.log(`🎮 CS2 download container detected, creating game server...`)
       
-      // Extract server ID from container name (assuming format: gamecontrol-cs2-{serverId})
-      const serverId = containerName.split('-').pop()
-      const gameContainerName = `gamecontrol-cs2-game-${serverId}`
-      
-      // Use default ports for CS2 (will be updated by Vercel side)
-      const port = 27015
-      const rconPort = 28015
-      
-      console.log(`🎮 Creating CS2 game server container...`)
-      
-      // Check if a game container already exists and remove it
-      try {
-        const existingContainer = docker.getContainer(gameContainerName)
-        const existingInfo = await existingContainer.inspect()
-        console.log(`🗑️ Removing existing game container: ${gameContainerName}`)
-        await existingContainer.remove({ force: true })
-      } catch (err) {
-        // Container doesn't exist, that's fine
-        console.log(`ℹ️ No existing game container found`)
-      }
-      
       console.log(`🎮 Using existing CS2 download container for game server...`)
       
       // Use the existing download container directly
