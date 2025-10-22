@@ -324,6 +324,15 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
     }
   }, [serverId, server?.game, isCS2Ready])
 
+  // Check if CS2 has been started before when server details are loaded
+  useEffect(() => {
+    if (server?.game === 'CS2' && server.status === 'RUNNING') {
+      setHasCS2BeenStarted(true)
+      setIsCS2Ready(true)
+      console.log('📊 Server Detail: CS2 server was running, marking as ready')
+    }
+  }, [server])
+
   const fetchServerDetails = async () => {
     try {
       const response = await fetch(`/api/servers/${serverId}`)
@@ -1306,8 +1315,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
                 }
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isActionLoading ? 'Starting...' : 
-                 (server?.game === 'CS2' && !isCS2Ready) ? 'Downloading...' : 'Start'}
+                {isActionLoading ? 'Starting...' : 'Start'}
               </button>
               <button
                 onClick={() => handleServerAction('stop')}
