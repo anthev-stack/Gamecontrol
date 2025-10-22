@@ -384,6 +384,17 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
       
       console.log(`🎮 Creating CS2 game server container...`)
       
+      // Check if a game container already exists and remove it
+      try {
+        const existingContainer = docker.getContainer(gameContainerName)
+        const existingInfo = await existingContainer.inspect()
+        console.log(`🗑️ Removing existing game container: ${gameContainerName}`)
+        await existingContainer.remove({ force: true })
+      } catch (err) {
+        // Container doesn't exist, that's fine
+        console.log(`ℹ️ No existing game container found`)
+      }
+      
       // Create CS2 game server container
       const gameContainer = await docker.createContainer({
         Image: 'steamcmd/steamcmd:latest',
