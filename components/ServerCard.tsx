@@ -42,39 +42,38 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
     }
   }, [server.game, server.id, isCS2Ready])
 
-  // Track download progress for CS2 servers
+  // Track download progress for CS2 servers using new VM status endpoint
   const trackDownloadProgress = async () => {
     if (server.game !== 'CS2' || isCS2Ready) return
 
     console.log('📊 Dashboard: Tracking download progress for CS2 server', server.id) // Debug log
 
     try {
-      // First, check if the container is still running or has exited
-      const containerResponse = await fetch(`/api/servers/${server.containerId}`)
-      console.log('📊 Dashboard: Container status response:', containerResponse.status) // Debug log
+      // Use the new VM status endpoint for accurate progress tracking
+      const statusResponse = await fetch(`/api/servers/${server.id}/status`)
       
-      if (containerResponse.ok) {
-        const containerData = await containerResponse.json()
-        console.log('📊 Dashboard: Container status:', containerData) // Debug log
+      console.log('📊 Dashboard: Status API response:', statusResponse.status) // Debug log
+      
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json()
+        console.log('📊 Dashboard: Status data:', statusData) // Debug log
         
-        // If container has exited, mark download as complete
-        if (containerData.State && containerData.State.Status === 'exited') {
-          console.log('📊 Dashboard: Container has exited, marking download complete') // Debug log
-          setDownloadProgress(100)
-          return
+        setDownloadProgress(statusData.percent)
+        
+        if (statusData.ready) {
+          console.log('📊 Dashboard: Download is ready!') // Debug log
+          // Could trigger a refresh or update UI state here
         }
-      } else if (containerResponse.status === 404) {
-        // Container no longer exists - check logs to see if download actually completed
-        console.log('📊 Dashboard: Container no longer exists (404), checking logs for completion') // Debug log
+      } else if (statusResponse.status === 404) {
+        // Container doesn't exist - check if we have completion logs
+        console.log('📊 Dashboard: Container not found (404), checking logs for completion') // Debug log
         
-        // Try to get logs to see if download completed properly
         const logsResponse = await fetch(`/api/servers/${server.id}/console/logs?tail=100`)
         if (logsResponse.ok) {
           const logsData = await logsResponse.json()
           const logsString = logsData.logs || ''
           const logs = logsString.split('\n').filter((log: string) => log.trim() !== '')
           
-          // Check if we see completion messages
           const hasCompletionMessage = logs.some((log: string) => 
             log.includes('Success! App') || 
             log.includes('fully installed') || 
@@ -82,85 +81,8 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
           )
           
           if (hasCompletionMessage) {
-            console.log('📊 Dashboard: Found completion message in logs, marking download complete') // Debug log
+            console.log('📊 Dashboard: Found completion message, marking as complete') // Debug log
             setDownloadProgress(100)
-            return
-          } else {
-            console.log('📊 Dashboard: No completion message found, download may still be in progress') // Debug log
-            // Don't mark as complete yet, continue with normal progress tracking
-          }
-        }
-      }
-      
-      const response = await fetch(`/api/servers/${server.id}/console/logs?tail=50`)
-      console.log('📊 Dashboard: API response status:', response.status) // Debug log
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('📊 Dashboard: API response data:', data) // Debug log
-        
-        const logsString = data.logs || ''
-        console.log('📊 Dashboard: Raw logs string:', logsString) // Debug log
-        
-        const logs = logsString.split('\n').filter((log: string) => log.trim() !== '')
-        console.log('📊 Dashboard: Parsed logs array:', logs) // Debug log
-        
-        // Look for Steam update progress in logs - both old and new formats
-        const progressLogs = logs.filter((log: string) => 
-          log.includes('[ 0%]') || 
-          log.includes('[10%]') || 
-          log.includes('[20%]') || 
-          log.includes('[30%]') || 
-          log.includes('[40%]') || 
-          log.includes('[50%]') || 
-          log.includes('[60%]') || 
-          log.includes('[70%]') || 
-          log.includes('[80%]') || 
-          log.includes('[90%]') || 
-          log.includes('[100%]') ||
-          log.includes('progress:') ||
-          log.includes('Update state') ||
-          log.includes('downloading') ||
-          log.includes('verifying') ||
-          log.includes('committing') ||
-          log.includes('Success! App') ||
-          log.includes('fully installed') ||
-          log.includes('Download complete') ||
-          log.includes('Update complete') ||
-          log.includes('CS2 download complete')
-        )
-        console.log('📊 Dashboard: Found progress logs:', progressLogs.length, progressLogs) // Debug log
-
-        if (progressLogs.length > 0) {
-          const latestLog = progressLogs[progressLogs.length - 1]
-          console.log('📊 Dashboard progress log:', latestLog) // Debug log
-          
-          // Check for completion messages first
-          if (latestLog.includes('Success! App') || 
-              latestLog.includes('fully installed') || 
-              latestLog.includes('CS2 download complete')) {
-            console.log('📊 Dashboard progress complete: 100%') // Debug log
-            setDownloadProgress(100)
-          } else {
-            // Try new steamcmd progress format first: "progress: 0.59 (331282603 / 56099402942)"
-            const newProgressMatch = latestLog.match(/progress: (\d+\.?\d*) \((\d+) \/ (\d+)\)/)
-            if (newProgressMatch) {
-              const progress = parseFloat(newProgressMatch[1])
-              const roundedProgress = Math.round(progress)
-              console.log('📊 Dashboard progress update:', roundedProgress + '%') // Debug log
-              setDownloadProgress(roundedProgress)
-            } else {
-              // Fallback to old format: "[59%]"
-              const percentMatch = latestLog.match(/\[(\d+)%\]/)
-              if (percentMatch) {
-                const progress = parseInt(percentMatch[1])
-                console.log('📊 Dashboard progress update (old format):', progress + '%') // Debug log
-                setDownloadProgress(progress)
-              } else if (latestLog.includes('Download complete') || latestLog.includes('Update complete')) {
-                console.log('📊 Dashboard progress complete: 100%') // Debug log
-                setDownloadProgress(100)
-              }
-            }
           }
         }
       }

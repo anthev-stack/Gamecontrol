@@ -520,6 +520,87 @@ app.get('/api/servers/:containerId', authenticate, async (req, res) => {
   }
 })
 
+// Get server download status (for CS2 servers)
+app.get('/api/servers/:containerId/status', authenticate, async (req, res) => {
+  try {
+    const container = docker.getContainer(req.params.containerId)
+    const info = await container.inspect()
+    
+    // Get recent logs to check download progress
+    const logs = await container.logs({
+      stdout: true,
+      stderr: true,
+      timestamps: true,
+      tail: 50
+    })
+    
+    const allLogs = logs.toString()
+    const lines = allLogs.split('\n').filter(line => line.trim())
+    
+    let phase = 'unknown'
+    let percent = 0
+    let ready = false
+    
+    // Check for completion messages
+    const hasCompletionMessage = lines.some(line => 
+      line.includes('Success! App') || 
+      line.includes('fully installed') || 
+      line.includes('CS2 download complete')
+    )
+    
+    if (hasCompletionMessage) {
+      phase = 'complete'
+      percent = 100
+      ready = true
+    } else {
+      // Look for progress in logs
+      const progressLogs = lines.filter(line => 
+        line.includes('progress:') || 
+        line.includes('Update state') ||
+        line.includes('downloading') ||
+        line.includes('verifying') ||
+        line.includes('committing')
+      )
+      
+      if (progressLogs.length > 0) {
+        const latestLog = progressLogs[progressLogs.length - 1]
+        
+        // Parse progress percentage
+        const progressMatch = latestLog.match(/progress: (\d+\.?\d*) \((\d+) \/ (\d+)\)/)
+        if (progressMatch) {
+          percent = Math.round(parseFloat(progressMatch[1]))
+        }
+        
+        // Determine phase
+        if (latestLog.includes('downloading')) {
+          phase = 'downloading'
+        } else if (latestLog.includes('verifying')) {
+          phase = 'verifying'
+        } else if (latestLog.includes('committing')) {
+          phase = 'committing'
+        } else {
+          phase = 'processing'
+        }
+      } else {
+        phase = 'starting'
+        percent = 0
+      }
+    }
+    
+    res.json({
+      phase,
+      percent,
+      ready,
+      containerId: req.params.containerId,
+      status: info.State.Status,
+      running: info.State.Running
+    })
+  } catch (error) {
+    console.error('❌ Error getting server status:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // Get server stats
 app.get('/api/servers/:containerId/stats', authenticate, async (req, res) => {
   try {
@@ -629,7 +710,7 @@ app.get('/api/containers', authenticate, async (req, res) => {
 app.get('/api/servers/:containerId/logs', authenticate, async (req, res) => {
   try {
     const container = docker.getContainer(req.params.containerId)
-    const { tail = 100, follow = false } = req.query
+    const { tail = 100, follow = false, raw = false } = req.query
     
     const logs = await container.logs({
       stdout: true,
@@ -639,9 +720,18 @@ app.get('/api/servers/:containerId/logs', authenticate, async (req, res) => {
       follow: follow === 'true'
     })
     
-    // Filter logs to show only game server output
     const allLogs = logs.toString()
-    const filteredLogs = filterGameServerLogs(allLogs)
+    
+    // For CS2 download containers or when raw=true, return unfiltered logs
+    const containerInfo = await container.inspect()
+    const isCS2Download = containerInfo.Name.includes('cs2') && containerInfo.Name.includes('gamecontrol')
+    
+    let filteredLogs
+    if (raw === 'true' || isCS2Download) {
+      filteredLogs = allLogs
+    } else {
+      filteredLogs = filterGameServerLogs(allLogs)
+    }
     
     res.json({
       logs: filteredLogs,
