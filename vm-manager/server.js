@@ -399,8 +399,9 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
       const gameContainer = await docker.createContainer({
         Image: 'steamcmd/steamcmd:latest',
         name: gameContainerName,
+        Entrypoint: ['/bin/bash'],
         Cmd: [
-          'bash', '-c',
+          '-c',
           `echo "Starting CS2 game server..."; cd /home/steam/cs2; echo "CS2 directory contents:"; ls -la; echo "Looking for CS2 server binary..."; find . -name "*srcds*" -type f; echo "Checking game directory..."; ls -la game/; echo "Starting CS2 server..."; exec ./game/bin/linuxsteamclient64_srv -game cs2 +map de_dust2 +maxplayers 10 +port ${port} +rcon_port ${rconPort} +rcon_password changeme +sv_setsteamaccount anonymous`
         ],
         ExposedPorts: {
