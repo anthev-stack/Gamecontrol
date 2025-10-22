@@ -17,6 +17,12 @@ export async function POST(
 
     const serverId = params.id
 
+    // Check if prisma is available
+    if (!prisma) {
+      console.error('❌ Prisma client is not available')
+      return NextResponse.json({ error: 'Database connection error' }, { status: 500 })
+    }
+
     // Get server from database
     const server = await prisma.server.findFirst({
       where: {
@@ -33,16 +39,29 @@ export async function POST(
       return NextResponse.json({ error: 'Server not deployed to VM' }, { status: 400 })
     }
 
+    console.log(`🔄 Starting server ${serverId} with container ${server.containerId}`)
+
     // Start server on VM
     const result = await startServerOnVM(server.containerId)
     
     if (result.error) {
+      console.error('❌ VM start error:', result.error)
       return NextResponse.json({ error: result.error }, { status: 500 })
     }
 
+    console.log('✅ Server started successfully')
     return NextResponse.json({ message: 'Server started successfully', status: 'running' })
   } catch (error) {
-    console.error('Error starting server:', error)
+    console.error('❌ Error starting server:', error)
+    
+    // Provide more specific error information
+    if (error instanceof Error) {
+      if (error.message.includes('prisma')) {
+        return NextResponse.json({ error: 'Database connection error' }, { status: 500 })
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+    
     return NextResponse.json({ error: 'Failed to start server' }, { status: 500 })
   }
 }
