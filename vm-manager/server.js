@@ -188,16 +188,20 @@ app.post('/api/servers', authenticate, async (req, res) => {
            apt-get install -y -qq wget unzip;
            echo "Installing 32-bit compatibility libraries...";
            apt-get install -y -qq lib32gcc-s1 lib32stdc++6;
-           echo "Creating steamcmd directory...";
+           echo "Creating steam user and directories...";
+           useradd -m -s /bin/bash steam;
            mkdir -p /home/steam/steamcmd;
+           mkdir -p /home/steam/cs2;
+           chown -R steam:steam /home/steam;
            cd /home/steam/steamcmd;
-           echo "Downloading CS2 server files...";
+           echo "Downloading steamcmd...";
            wget -O steamcmd.tar.gz "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz";
            echo "Extracting steamcmd...";
            tar -xzf steamcmd.tar.gz;
            chmod +x steamcmd.sh;
+           chown -R steam:steam /home/steam/steamcmd;
            echo "Downloading CS2 server files...";
-           ./steamcmd.sh +force_install_dir /home/steam/cs2 +login anonymous +app_update 730 +quit;
+           su - steam -c "cd /home/steam/steamcmd && ./steamcmd.sh +force_install_dir /home/steam/cs2 +login anonymous +app_update 730 +quit";
            echo "CS2 download complete. Container will exit.";
            exit 0`
         ],
