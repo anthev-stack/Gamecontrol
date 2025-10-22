@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
 import { startServerOnVM } from '@/lib/vm-client'
 
 export async function POST(
@@ -9,21 +8,30 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log('🔄 Start route called with serverId:', params.id)
+    
     const session = await getServerSession(authOptions)
     
     if (!session?.user) {
+      console.log('❌ No session found')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const serverId = params.id
+    console.log('🔄 Looking up server in database...')
 
-    // Check if prisma is available
+    // Dynamic import of Prisma to avoid initialization issues
+    const { prisma } = await import('@/lib/prisma')
+    
     if (!prisma) {
       console.error('❌ Prisma client is not available')
       return NextResponse.json({ error: 'Database connection error' }, { status: 500 })
     }
 
+    console.log('✅ Prisma client is available')
+
     // Get server from database
+    console.log('🔄 Querying database for server...')
     const server = await prisma.server.findFirst({
       where: {
         id: serverId,
@@ -31,7 +39,13 @@ export async function POST(
       }
     })
 
+    console.log('📊 Server found:', server ? 'Yes' : 'No')
+    if (server) {
+      console.log('📊 Server containerId:', server.containerId)
+    }
+
     if (!server) {
+      console.log('❌ Server not found in database')
       return NextResponse.json({ error: 'Server not found' }, { status: 404 })
     }
 
