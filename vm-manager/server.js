@@ -390,7 +390,7 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
         name: gameContainerName,
         Cmd: [
           'bash', '-c',
-          `echo "Starting CS2 game server..."; cd /home/steam/cs2; echo "CS2 directory contents:"; ls -la; echo "Starting CS2 server..."; exec ./game/bin/linuxsteamclient64_srv +set_steam_account anonymous +sv_setsteamaccount anonymous +map de_dust2 +maxplayers 10 +port ${port} +rcon_port ${rconPort} +rcon_password changeme`
+          `echo "Starting CS2 game server..."; cd /home/steam/cs2; echo "CS2 directory contents:"; ls -la; echo "Looking for CS2 server binary..."; find . -name "*srcds*" -type f; echo "Checking game directory..."; ls -la game/; echo "Starting CS2 server..."; exec ./game/bin/linuxsteamclient64_srv -game cs2 +map de_dust2 +maxplayers 10 +port ${port} +rcon_port ${rconPort} +rcon_password changeme +sv_setsteamaccount anonymous`
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},
