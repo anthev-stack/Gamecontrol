@@ -36,6 +36,8 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
       const interval = setInterval(() => {
         if (!isCS2Ready) {
           trackDownloadProgress()
+        } else {
+          console.log('📊 Dashboard: Stopping progress tracking - CS2 is ready') // Debug log
         }
       }, 2000)
       
@@ -45,7 +47,10 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
 
   // Track download progress for CS2 servers using new VM status endpoint
   const trackDownloadProgress = async () => {
-    if (server.game !== 'CS2' || isCS2Ready) return
+    if (server.game !== 'CS2' || isCS2Ready) {
+      console.log('📊 Dashboard: Skipping progress tracking - not CS2 or already ready') // Debug log
+      return
+    }
 
     console.log('📊 Dashboard: Tracking download progress for CS2 server', server.id) // Debug log
 
@@ -106,7 +111,11 @@ export default function ServerCard({ server, onEdit, onDelete, onRefresh }: Serv
       if (response.ok) {
         const data = await response.json()
         // If container is stopped/exited, CS2 download is complete
-        setIsCS2Ready(data.status === 'stopped' || data.status === 'exited')
+        const isReady = data.status === 'stopped' || data.status === 'exited'
+        if (isReady && !isCS2Ready) {
+          console.log('📊 Dashboard: CS2 ready detected from server status') // Debug log
+          setIsCS2Ready(true)
+        }
       }
     } catch (err) {
       console.error('Error checking CS2 ready status:', err)
