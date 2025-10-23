@@ -294,6 +294,13 @@ app.post('/api/servers', authenticate, async (req, res) => {
     const container = await docker.createContainer(containerConfig)
     console.log(`✅ Container created: ${container.id}`)
     
+    // Start the container automatically for CS2 download containers
+    if (gameType === 'CS2') {
+      console.log('🚀 Starting CS2 download container...')
+      await container.start()
+      console.log(`✅ CS2 download container started: ${container.id}`)
+    }
+    
     // Automatically create FTP account (if needed) and link server
     let ftpInfo = null
     try {
@@ -351,7 +358,7 @@ app.post('/api/servers', authenticate, async (req, res) => {
       port: port,
       rconPort: rconPort,
       host: VM_HOST,
-      status: 'created',
+      status: gameType === 'CS2' ? 'downloading' : 'created',
       ftp: ftpInfo
     })
   } catch (error) {
