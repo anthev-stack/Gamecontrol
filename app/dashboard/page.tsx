@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import useSWR from 'swr'
 import ServerCard from '@/components/ServerCard'
 import ServerModal from '@/components/ServerModal'
@@ -73,7 +74,9 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-white">GameControl</h1>
+              <Link href="/" className="text-3xl font-bold text-white hover:text-blue-300 transition-colors">
+                Gamecontrol
+              </Link>
               <p className="text-gray-400 mt-1">Welcome back, {session?.user?.name || session?.user?.email}</p>
             </div>
             <button

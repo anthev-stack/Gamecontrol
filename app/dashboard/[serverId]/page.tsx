@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Server } from '@prisma/client'
 import { BarChart3, Terminal, RotateCcw, Clock, Settings, Copy, AlertTriangle, CheckCircle, XCircle, Lightbulb } from 'lucide-react'
 
@@ -1286,6 +1287,9 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
+              <Link href="/" className="text-xl font-bold text-white hover:text-blue-300 transition-colors mr-6">
+                Gamecontrol
+              </Link>
               <button
                 onClick={() => router.push('/dashboard')}
                 className="mr-4 text-gray-300 hover:text-white transition-colors"
