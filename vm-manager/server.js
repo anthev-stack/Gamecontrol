@@ -395,14 +395,16 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
       
       console.log(`🎮 Starting CS2 game server in download container...`)
       
-      // Ensure the download container is running
+      // Check if container is running, if not start it
       try {
         const containerInfo = await downloadContainer.inspect()
         if (containerInfo.State.Status !== "running") {
           console.log(`🔄 Starting download container...`)
           await downloadContainer.start()
           // Wait a moment for container to be ready
-          await new Promise(resolve => setTimeout(resolve, 2000))
+          await new Promise(resolve => setTimeout(resolve, 3000))
+        } else {
+          console.log(`✅ Container already running, proceeding with game server startup...`)
         }
       } catch (err) {
         console.error(`❌ Error with download container:`, err)
@@ -428,9 +430,9 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
       })
     } else {
       // For other games, start the existing container
-      await container.start()
-      console.log(`✅ Container started`)
-      res.json({ message: 'Server started', status: 'running' })
+    await container.start()
+    console.log(`✅ Container started`)
+    res.json({ message: 'Server started', status: 'running' })
     }
   } catch (error) {
     console.error('❌ Error starting server:', error)
