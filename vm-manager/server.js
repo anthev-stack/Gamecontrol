@@ -181,6 +181,7 @@ app.post('/api/servers', authenticate, async (req, res) => {
       containerConfig = {
         Image: 'steamcmd/steamcmd:latest',
         name: containerName,
+        Entrypoint: null,  // Override steamcmd entrypoint
         Cmd: [
           'bash', '-c',
           `echo "Starting CS2 server setup...";
