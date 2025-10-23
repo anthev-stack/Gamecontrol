@@ -1004,7 +1004,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
 
     const generateStartupCommand = () => {
       const selectedGameMode = cs2GameModes.find(mode => mode.id === settings.gameMode)
-      const baseCommand = `./game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon`
+      const baseCommand = `-dedicated -console -usercon`
       
       const gameModeCommand = selectedGameMode ? selectedGameMode.commandLine : ''
       const tickrateCommand = `+sv_tickrate ${settings.tickrate}`
@@ -1572,7 +1572,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
                         ]
 
                         const selectedGameMode = cs2GameModes.find(mode => mode.id === (server.gameMode || 'competitive'))
-                        const baseCommand = `./game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon`
+                        const baseCommand = `-dedicated -console -usercon`
                         
                         const gameModeCommand = selectedGameMode ? selectedGameMode.commandLine : ''
                         const tickrateCommand = `+sv_tickrate ${server.tickrate || 128}`
@@ -1622,7 +1622,7 @@ export default function ServerDetailPage({ params }: ServerDetailPageProps) {
                             { id: 'dangerzone', commandLine: '+game_type 6 +game_mode 0' }
                           ]
                           const selectedGameMode = cs2GameModes.find(mode => mode.id === (server.gameMode || 'competitive'))
-                          const baseCommand = `./game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon`
+                          const baseCommand = `-dedicated -console -usercon`
                           const gameModeCommand = selectedGameMode ? selectedGameMode.commandLine : ''
                           const tickrateCommand = `+sv_tickrate ${server.tickrate || 128}`
                           const maxPlayersCommand = `+maxplayers ${server.maxPlayers || 10}`
