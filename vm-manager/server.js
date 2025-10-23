@@ -395,16 +395,18 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
       
       console.log(`🎮 Starting CS2 game server in download container...`)
       
-      // Start the download container if it's not running
+      // Ensure the download container is running
       try {
         const containerInfo = await downloadContainer.inspect()
         if (containerInfo.State.Status !== "running") {
           console.log(`🔄 Starting download container...`)
           await downloadContainer.start()
+          // Wait a moment for container to be ready
+          await new Promise(resolve => setTimeout(resolve, 2000))
         }
       } catch (err) {
-        console.error(`❌ Error starting download container:`, err)
-        return res.status(500).json({ error: "Failed to start download container" })
+        console.error(`❌ Error with download container:`, err)
+        return res.status(500).json({ error: "Failed to access download container" })
       }
       
       // Execute the CS2 server command in the existing container
