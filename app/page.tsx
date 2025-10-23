@@ -16,9 +16,6 @@ import {
   Gamepad2,
   Crown,
   Settings,
-  Headphones,
-  Discord,
-  CreditCard,
   Share2
 } from 'lucide-react'
 
@@ -522,7 +519,7 @@ export default async function Home() {
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mr-4">
-                  <Discord className="w-6 h-6 text-white" />
+                  <MessageCircle className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">Discord Community</h3>
@@ -562,7 +559,7 @@ export default async function Home() {
               </p>
               <div className="flex space-x-4">
                 <Link href="https://discord.gg/gamecontrol" className="text-blue-400 hover:text-blue-300 transition-colors">
-                  <Discord className="w-6 h-6" />
+                  <MessageCircle className="w-6 h-6" />
                 </Link>
               </div>
             </div>
