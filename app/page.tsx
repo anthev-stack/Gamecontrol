@@ -22,10 +22,6 @@ import {
 export default async function Home() {
   const session = await getServerSession(authOptions)
   
-  if (session) {
-    redirect('/dashboard')
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900">
       {/* Navigation */}
@@ -38,15 +34,31 @@ export default async function Home() {
             <span className="text-2xl font-bold text-white">GameControl</span>
           </div>
           <div className="flex items-center space-x-6">
-            <Link href="/login" className="text-blue-200 hover:text-white transition-colors">
-              Sign In
-            </Link>
-            <Link 
-              href="/register" 
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-            >
-              Get Started
-            </Link>
+            {session ? (
+              <>
+                <Link href="/dashboard" className="text-blue-200 hover:text-white transition-colors">
+                  Dashboard
+                </Link>
+                <Link 
+                  href="/dashboard" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+                >
+                  Manage Servers
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="text-blue-200 hover:text-white transition-colors">
+                  Sign In
+                </Link>
+                <Link 
+                  href="/register" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -135,19 +147,31 @@ export default async function Home() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/register" 
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors flex items-center justify-center"
-            >
-              Start Hosting Now
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Link>
-            <Link 
-              href="#pricing" 
-              className="bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors border border-white/20"
-            >
-              View Pricing
-            </Link>
+            {session ? (
+              <Link 
+                href="/dashboard" 
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors flex items-center justify-center"
+              >
+                Go to Dashboard
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
+            ) : (
+              <>
+                <Link 
+                  href="/register" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors flex items-center justify-center"
+                >
+                  Start Hosting Now
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Link>
+                <Link 
+                  href="#pricing" 
+                  className="bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors border border-white/20"
+                >
+                  View Pricing
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -194,10 +218,10 @@ export default async function Home() {
                 </li>
               </ul>
               <Link 
-                href="/register" 
+                href={session ? "/dashboard" : "/register"} 
                 className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition-colors text-center block"
               >
-                Get Started
+                {session ? "Manage Servers" : "Get Started"}
               </Link>
             </div>
 
@@ -239,10 +263,10 @@ export default async function Home() {
                 </li>
               </ul>
               <Link 
-                href="/register" 
+                href={session ? "/dashboard" : "/register"} 
                 className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-lg font-semibold transition-colors text-center block"
               >
-                Get Started
+                {session ? "Manage Servers" : "Get Started"}
               </Link>
             </div>
 
@@ -279,10 +303,10 @@ export default async function Home() {
                 </li>
               </ul>
               <Link 
-                href="/register" 
+                href={session ? "/dashboard" : "/register"} 
                 className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition-colors text-center block"
               >
-                Get Started
+                {session ? "Manage Servers" : "Get Started"}
               </Link>
             </div>
           </div>
