@@ -177,22 +177,26 @@ app.post('/api/servers', authenticate, async (req, res) => {
     let containerConfig = {}
     
     if (gameType === 'CS2') {
-      // Use Steam Runtime 3 image for CS2 (like Pterodactyl does)
+      // Use official Steam Runtime for CS2
       containerConfig = {
-        Image: '1zc/cs2-pterodactyl:latest',
+        Image: 'steamcmd/steamcmd:latest',
         name: containerName,
-        Env: [
-          `SRCDS_APPID=730`,
-          `SRCDS_PORT=${port}`,
-          `SRCDS_RCON_PORT=${rconPort}`,
-          `SRCDS_RCON_PASSWORD=${config.rconPassword || 'changeme'}`,
-          `SRCDS_MAXPLAYERS=${config.maxPlayers || 10}`,
-          `SRCDS_MAP=${config.map || 'de_dust2'}`,
-          `SRCDS_TICKRATE=${config.tickrate || 64}`,
-          `SRCDS_GAMETYPE=${config.gameType || 0}`,
-          `SRCDS_GAMEMODE=${config.gameMode || 0}`,
-          `STEAM_ACC=${config.steamAccount || 'anonymous'}`,
-          `AUTH_KEY=${config.authKey || ''}`
+        Cmd: [
+          'bash', '-c',
+          `echo "Starting CS2 server setup...";
+           echo "Installing dependencies...";
+           apt-get update -qq;
+           apt-get install -y -qq lib32gcc-s1 lib32stdc++6 libv8-dev;
+           echo "Creating steam user and directories...";
+           useradd -m -s /bin/bash steam;
+           mkdir -p /home/steam/cs2;
+           chown -R steam:steam /home/steam;
+           echo "Downloading CS2 server files...";
+           su - steam -c "cd /home/steam && /opt/steamcmd/steamcmd.sh +force_install_dir /home/steam/cs2 +login anonymous +app_update 730 +quit";
+           echo "CS2 download complete. Starting server...";
+           echo "Starting CS2 server with proper parameters...";
+           su - steam -c "cd /home/steam/cs2 && ./game/bin/linuxsteamrt64/cs2 -dedicated -console -usercon -game cs2 +map de_dust2 +maxplayers 10 +port ${port} +rcon_port ${rconPort} +rcon_password ${config.rconPassword || 'changeme'} +sv_setsteamaccount anonymous +ip 0.0.0.0 -nobreakpad";
+           echo "CS2 server started successfully!"`
         ],
         ExposedPorts: {
           [`${port}/tcp`]: {},
@@ -357,7 +361,7 @@ app.post('/api/servers', authenticate, async (req, res) => {
       port: port,
       rconPort: rconPort,
       host: VM_HOST,
-      status: 'running',
+      status: gameType === 'CS2' ? 'downloading' : 'created',
       ftp: ftpInfo
     })
   } catch (error) {
