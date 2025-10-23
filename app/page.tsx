@@ -23,7 +23,7 @@ export default async function Home() {
   const session = await getServerSession(authOptions)
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Navigation */}
       <nav className="relative z-50 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -79,7 +79,7 @@ export default async function Home() {
           
           {/* Game Showcase */}
           <div className="grid md:grid-cols-3 gap-8 mb-12">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="w-16 h-16 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Gamepad2 className="w-8 h-8 text-white" />
               </div>
@@ -101,7 +101,7 @@ export default async function Home() {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="w-16 h-16 bg-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Crown className="w-8 h-8 text-white" />
               </div>
@@ -123,7 +123,7 @@ export default async function Home() {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="w-16 h-16 bg-red-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Zap className="w-8 h-8 text-white" />
               </div>
@@ -166,7 +166,7 @@ export default async function Home() {
                 </Link>
                 <Link 
                   href="#pricing" 
-                  className="bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors border border-white/20"
+                  className="bg-gray-800/50 hover:bg-gray-700/50 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors border border-gray-700/50"
                 >
                   View Pricing
                 </Link>
@@ -186,7 +186,7 @@ export default async function Home() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* Minecraft Plan */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="text-center mb-8">
                 <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <Gamepad2 className="w-6 h-6 text-white" />
@@ -226,7 +226,7 @@ export default async function Home() {
             </div>
 
             {/* CS2 Plan */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20 relative">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50 relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <span className="bg-orange-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
                   Most Popular
@@ -271,7 +271,7 @@ export default async function Home() {
             </div>
 
             {/* Rust Plan */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="text-center mb-8">
                 <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <Zap className="w-6 h-6 text-white" />
@@ -312,7 +312,7 @@ export default async function Home() {
           </div>
 
           {/* Cost Sharing Feature */}
-          <div className="mt-16 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl p-8 border border-blue-400/30">
+          <div className="mt-16 bg-gradient-to-r from-gray-800/50 to-gray-700/50 rounded-2xl p-8 border border-gray-600/50">
             <div className="text-center">
               <div className="w-16 h-16 bg-purple-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                 <Share2 className="w-8 h-8 text-white" />
@@ -323,7 +323,7 @@ export default async function Home() {
                 Send an invite link and both pay 50/50 for the same server access.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <span className="bg-white/10 px-6 py-3 rounded-lg text-white font-semibold">
+                <span className="bg-gray-800/50 px-6 py-3 rounded-lg text-white font-semibold">
                   Coming Soon: Billing Panel
                 </span>
               </div>
@@ -341,7 +341,7 @@ export default async function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mb-4">
                 <Settings className="w-6 h-6 text-white" />
               </div>
@@ -349,7 +349,7 @@ export default async function Home() {
               <p className="text-blue-200">Start, stop, restart your servers with a single click. No technical knowledge required.</p>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mb-4">
                 <FileText className="w-6 h-6 text-white" />
               </div>
@@ -357,7 +357,7 @@ export default async function Home() {
               <p className="text-blue-200">We recommend FileZilla for complete file control. Upload plugins, configs, and mods easily.</p>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mb-4">
                 <MessageCircle className="w-6 h-6 text-white" />
               </div>
@@ -365,7 +365,7 @@ export default async function Home() {
               <p className="text-blue-200">Monitor your server in real-time with our live console. See player joins, commands, and logs.</p>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center mb-4">
                 <Zap className="w-6 h-6 text-white" />
               </div>
@@ -373,7 +373,7 @@ export default async function Home() {
               <p className="text-blue-200">Keep your servers updated automatically. Never worry about outdated game versions.</p>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center mb-4">
                 <Shield className="w-6 h-6 text-white" />
               </div>
@@ -381,7 +381,7 @@ export default async function Home() {
               <p className="text-blue-200">Advanced protection against attacks. Keep your server online and accessible.</p>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="w-12 h-12 bg-cyan-500 rounded-xl flex items-center justify-center mb-4">
                 <Globe className="w-6 h-6 text-white" />
               </div>
@@ -393,7 +393,7 @@ export default async function Home() {
       </section>
 
       {/* Server Specs Section */}
-      <section className="px-6 py-20 bg-white/5">
+      <section className="px-6 py-20 bg-gray-800/30">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">Powerful Infrastructure</h2>
@@ -445,7 +445,7 @@ export default async function Home() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="flex items-center mb-4">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
@@ -465,7 +465,7 @@ export default async function Home() {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="flex items-center mb-4">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
@@ -485,7 +485,7 @@ export default async function Home() {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="flex items-center mb-4">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
@@ -509,7 +509,7 @@ export default async function Home() {
       </section>
 
       {/* Support Section */}
-      <section className="px-6 py-20 bg-white/5">
+      <section className="px-6 py-20 bg-gray-800/30">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">We're Here to Help</h2>
@@ -517,7 +517,7 @@ export default async function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center mr-4">
                   <MessageCircle className="w-6 h-6 text-white" />
@@ -540,7 +540,7 @@ export default async function Home() {
               </Link>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center mr-4">
                   <MessageCircle className="w-6 h-6 text-white" />
