@@ -177,40 +177,34 @@ app.post('/api/servers', authenticate, async (req, res) => {
     let containerConfig = {}
     
     if (gameType === 'CS2') {
-      // First stage: Download CS2 with wget
+      // Use Steam Runtime 3 image for CS2 (like Pterodactyl does)
       containerConfig = {
-        Image: 'ubuntu:22.04',
+        Image: '1zc/cs2-pterodactyl:latest',
         name: containerName,
-        Cmd: [
-          'bash', '-c',
-          `echo "Starting CS2 download process...";
-           apt-get update -qq;
-           apt-get install -y -qq wget unzip;
-           echo "Installing 32-bit compatibility libraries...";
-           apt-get install -y -qq lib32gcc-s1 lib32stdc++6;
-           echo "Creating steam user and directories...";
-           useradd -m -s /bin/bash steam;
-           mkdir -p /home/steam/steamcmd;
-           mkdir -p /home/steam/cs2;
-           chown -R steam:steam /home/steam;
-           cd /home/steam/steamcmd;
-           echo "Downloading steamcmd...";
-           wget -O steamcmd.tar.gz "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz";
-           echo "Extracting steamcmd...";
-           tar -xzf steamcmd.tar.gz;
-           chmod +x steamcmd.sh;
-           chown -R steam:steam /home/steam/steamcmd;
-           echo "Downloading CS2 server files...";
-           su - steam -c "cd /home/steam/steamcmd && ./steamcmd.sh +force_install_dir /home/steam/cs2 +login anonymous +app_update 730 +quit";
-           echo "CS2 download complete. Ready for game server startup.";
-           echo "Container will stay running for game server management.";
-           echo "Starting keep-alive process...";
-           while true; do
-             echo "Container is alive - $(date)";
-             sleep 30;
-           done`
+        Env: [
+          `SRCDS_APPID=730`,
+          `SRCDS_PORT=${port}`,
+          `SRCDS_RCON_PORT=${rconPort}`,
+          `SRCDS_RCON_PASSWORD=${config.rconPassword || 'changeme'}`,
+          `SRCDS_MAXPLAYERS=${config.maxPlayers || 10}`,
+          `SRCDS_MAP=${config.map || 'de_dust2'}`,
+          `SRCDS_TICKRATE=${config.tickrate || 64}`,
+          `SRCDS_GAMETYPE=${config.gameType || 0}`,
+          `SRCDS_GAMEMODE=${config.gameMode || 0}`,
+          `STEAM_ACC=${config.steamAccount || 'anonymous'}`,
+          `AUTH_KEY=${config.authKey || ''}`
         ],
+        ExposedPorts: {
+          [`${port}/tcp`]: {},
+          [`${port}/udp`]: {},
+          [`${rconPort}/tcp`]: {}
+        },
         HostConfig: {
+          PortBindings: {
+            [`${port}/tcp`]: [{ HostPort: `${port}` }],
+            [`${port}/udp`]: [{ HostPort: `${port}` }],
+            [`${rconPort}/tcp`]: [{ HostPort: `${rconPort}` }]
+          },
           Memory: (config.allocatedRam || 2048) * 1024 * 1024,
           RestartPolicy: {
             Name: 'unless-stopped'
@@ -299,11 +293,11 @@ app.post('/api/servers', authenticate, async (req, res) => {
     const container = await docker.createContainer(containerConfig)
     console.log(`✅ Container created: ${container.id}`)
     
-    // Start the container automatically for CS2 download containers
+    // Start the container automatically for CS2 servers
     if (gameType === 'CS2') {
-      console.log('🚀 Starting CS2 download container...')
+      console.log('🚀 Starting CS2 server container...')
       await container.start()
-      console.log(`✅ CS2 download container started: ${container.id}`)
+      console.log(`✅ CS2 server container started: ${container.id}`)
     }
     
     // Automatically create FTP account (if needed) and link server
@@ -363,7 +357,7 @@ app.post('/api/servers', authenticate, async (req, res) => {
       port: port,
       rconPort: rconPort,
       host: VM_HOST,
-      status: gameType === 'CS2' ? 'downloading' : 'created',
+      status: 'running',
       ftp: ftpInfo
     })
   } catch (error) {
@@ -386,75 +380,35 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
     const containerInfo = await container.inspect()
     const containerName = containerInfo.Name
     
-    // Check if this is a CS2 download container (contains 'cs2' and 'gamecontrol')
+    // For CS2 servers using Steam Runtime, just start the container
     if (containerName.includes('cs2') && containerName.includes('gamecontrol')) {
-      console.log(`🎮 CS2 download container detected, creating game server...`)
-      
-      console.log(`🎮 Using existing CS2 download container for game server...`)
-      
-      // Use the existing download container directly
-      const downloadContainer = docker.getContainer(req.params.containerId)
-      const port = 27015
-      const rconPort = 28015
-      
-      console.log(`🎮 Starting CS2 game server in download container...`)
+      console.log(`🎮 CS2 server container detected, starting...`)
       
       // Check if container is running, if not start it
-      let needsStart = false
       try {
-        const containerInfo = await downloadContainer.inspect()
+        const containerInfo = await container.inspect()
         if (containerInfo.State.Status !== "running") {
-          console.log(`🔄 Starting container...`)
-          await downloadContainer.start()
-          needsStart = true
+          console.log(`🔄 Starting CS2 server container...`)
+          await container.start()
         } else {
-          console.log(`✅ Container is running, proceeding with game server startup...`)
+          console.log(`✅ CS2 server container is already running`)
         }
       } catch (err) {
-        console.error(`❌ Error with download container:`, err)
-        return res.status(500).json({ error: "Failed to access download container" })
+        console.error(`❌ Error with CS2 container:`, err)
+        return res.status(500).json({ error: "Failed to access CS2 container" })
       }
       
-      // If we just started the container, wait for it to be ready
-      if (needsStart) {
-        console.log(`⏳ Waiting for container to be ready...`)
-        await new Promise(resolve => setTimeout(resolve, 3000))
-      }
-      
-      // Execute the CS2 server command in the existing container
-      console.log(`🎮 Executing CS2 server command...`)
-      const exec = await downloadContainer.exec({
-        Cmd: ["/bin/bash", "-c", "cd /home/steam/cs2 && ./game/bin/linuxsteamrt64/cs2 -game cs2 +map de_dust2 +maxplayers 10 +port " + port + " +rcon_port " + rconPort + " +rcon_password changeme +sv_setsteamaccount anonymous"],
-        AttachStdout: true,
-        AttachStderr: true,
-        Detach: false
-      })
-      
-      // Start the exec and stream output to container logs
-      const stream = await exec.start()
-      
-      // Stream the output to the container's stdout so it appears in logs
-      stream.on('data', (chunk) => {
-        console.log(`CS2: ${chunk.toString().trim()}`)
-      })
-      
-      stream.on('error', (err) => {
-        console.error(`CS2 Error: ${err}`)
-      })
-      
-      console.log(`✅ CS2 game server started in download container: ${req.params.containerId}`)
+      console.log(`✅ CS2 server started: ${req.params.containerId}`)
       res.json({
-        message: "CS2 game server started",
+        message: "CS2 server started",
         status: "running",
-        containerId: req.params.containerId,
-        port: port,
-        rconPort: rconPort
+        containerId: req.params.containerId
       })
     } else {
       // For other games, start the existing container
-    await container.start()
-    console.log(`✅ Container started`)
-    res.json({ message: 'Server started', status: 'running' })
+      await container.start()
+      console.log(`✅ Container started`)
+      res.json({ message: 'Server started', status: 'running' })
     }
   } catch (error) {
     console.error('❌ Error starting server:', error)
