@@ -202,8 +202,9 @@ app.post('/api/servers', authenticate, async (req, res) => {
            chown -R steam:steam /home/steam/steamcmd;
            echo "Downloading CS2 server files...";
            su - steam -c "cd /home/steam/steamcmd && ./steamcmd.sh +force_install_dir /home/steam/cs2 +login anonymous +app_update 730 +quit";
-           echo "CS2 download complete. Container will exit.";
-           exit 0`
+           echo "CS2 download complete. Ready for game server startup.";
+           echo "Container will stay running for game server management.";
+           tail -f /dev/null`
         ],
         HostConfig: {
           Memory: (config.allocatedRam || 2048) * 1024 * 1024,
