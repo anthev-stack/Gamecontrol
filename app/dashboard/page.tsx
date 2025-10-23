@@ -91,14 +91,9 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* FTP Credentials Section */}
-        <div className="mb-8">
-          <FTPCredentials />
-        </div>
-
         <div className="bg-gray-900/60 backdrop-blur-sm p-6 rounded-lg shadow-lg border border-gray-700/50 mb-8">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-white">Your Servers</h2>
+            <h2 className="text-2xl font-bold text-white">Servers</h2>
             <div className="flex gap-3">
             <button
               onClick={handleCreateServer}
@@ -151,6 +146,11 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
+
+        {/* FTP Credentials Section */}
+        <div className="mt-8">
+          <FTPCredentials />
+        </div>
       </main>
 
       {/* Server Modal */}
