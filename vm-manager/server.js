@@ -204,12 +204,16 @@ app.post('/api/servers', authenticate, async (req, res) => {
            su - steam -c "cd /home/steam/steamcmd && ./steamcmd.sh +force_install_dir /home/steam/cs2 +login anonymous +app_update 730 +quit";
            echo "CS2 download complete. Ready for game server startup.";
            echo "Container will stay running for game server management.";
-           tail -f /dev/null`
+           echo "Starting keep-alive process...";
+           while true; do
+             echo "Container is alive - $(date)";
+             sleep 30;
+           done`
         ],
         HostConfig: {
           Memory: (config.allocatedRam || 2048) * 1024 * 1024,
           RestartPolicy: {
-            Name: 'no'
+            Name: 'unless-stopped'
           }
         }
       }
@@ -418,13 +422,25 @@ app.post('/api/servers/:containerId/start', authenticate, async (req, res) => {
       }
       
       // Execute the CS2 server command in the existing container
+      console.log(`🎮 Executing CS2 server command...`)
       const exec = await downloadContainer.exec({
-        Cmd: ["/bin/bash", "-c", "cd /home/steam/cs2 && exec ./game/bin/linuxsteamrt64/cs2 -game cs2 +map de_dust2 +maxplayers 10 +port " + port + " +rcon_port " + rconPort + " +rcon_password changeme +sv_setsteamaccount anonymous"],
+        Cmd: ["/bin/bash", "-c", "cd /home/steam/cs2 && ./game/bin/linuxsteamrt64/cs2 -game cs2 +map de_dust2 +maxplayers 10 +port " + port + " +rcon_port " + rconPort + " +rcon_password changeme +sv_setsteamaccount anonymous"],
         AttachStdout: true,
-        AttachStderr: true
+        AttachStderr: true,
+        Detach: false
       })
       
-      await exec.start()
+      // Start the exec and stream output to container logs
+      const stream = await exec.start()
+      
+      // Stream the output to the container's stdout so it appears in logs
+      stream.on('data', (chunk) => {
+        console.log(`CS2: ${chunk.toString().trim()}`)
+      })
+      
+      stream.on('error', (err) => {
+        console.error(`CS2 Error: ${err}`)
+      })
       
       console.log(`✅ CS2 game server started in download container: ${req.params.containerId}`)
       res.json({
