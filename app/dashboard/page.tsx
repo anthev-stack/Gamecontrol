@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import useSWR from 'swr'
@@ -79,12 +79,12 @@ export default function DashboardPage() {
               </Link>
               <p className="text-gray-400 mt-1">Welcome back, {session?.user?.name || session?.user?.email}</p>
             </div>
-            <button
-              onClick={() => signOut({ callbackUrl: '/login' })}
+            <Link
+              href="/billing"
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
             >
-              Sign Out
-            </button>
+              Billing
+            </Link>
           </div>
         </div>
       </header>

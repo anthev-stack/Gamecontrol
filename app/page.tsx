@@ -31,7 +31,7 @@ export default async function Home() {
             <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
               <Server className="w-5 h-5 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white">GameControl</span>
+            <span className="text-2xl font-bold text-white">Gamecontrol</span>
           </div>
           <div className="flex items-center space-x-6">
             {session ? (
@@ -42,6 +42,14 @@ export default async function Home() {
                 <Link href="/billing" className="text-blue-200 hover:text-white transition-colors">
                   Billing
                 </Link>
+                <form action="/api/auth/signout" method="post" className="inline">
+                  <button 
+                    type="submit"
+                    className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </form>
               </>
             ) : (
               <>
@@ -581,7 +589,7 @@ export default async function Home() {
                 <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                   <Server className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-2xl font-bold text-white">GameControl</span>
+                <span className="text-2xl font-bold text-white">Gamecontrol</span>
               </div>
               <p className="text-blue-200 mb-4">
                 Professional game server hosting with complete control and innovative features.
@@ -626,7 +634,7 @@ export default async function Home() {
 
           <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-blue-200 text-sm">
-              © 2024 GameControl. All rights reserved.
+              © 2024 Gamecontrol. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <Link href="/privacy" className="text-blue-200 hover:text-white text-sm transition-colors">Privacy Policy</Link>
